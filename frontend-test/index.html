@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Factory Lab Test UI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark"></span>
+      <div>
+        <h1>Factory Lab</h1>
+        <p>Engine test console</p>
+      </div>
+    </div>
+
+    <label class="api-control">
+      <span>API base</span>
+      <input id="apiBaseInput" type="url" value="http://127.0.0.1:8000">
+    </label>
+
+    <div class="top-actions">
+      <button id="saveApiBaseBtn" type="button">Save API</button>
+      <button id="createWorldBtn" type="button">Create World</button>
+      <button id="refreshBtn" type="button">Refresh</button>
+      <button id="quickSetupBtn" type="button" class="primary">Quick Setup</button>
+      <button id="tick1Btn" type="button">Tick 1s</button>
+      <button id="tick10Btn" type="button">Tick 10s</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="sidebar panel">
+      <section>
+        <div class="section-title">
+          <h2>Worlds</h2>
+          <span id="worldCount" class="pill">0</span>
+        </div>
+        <div id="worldsList" class="stack compact-list"></div>
+      </section>
+
+      <section>
+        <div class="section-title">
+          <h2>Global Inventory</h2>
+        </div>
+        <div id="inventoryList" class="inventory-grid"></div>
+      </section>
+
+      <section>
+        <div class="section-title">
+          <h2>Catalog</h2>
+        </div>
+        <div class="tabs">
+          <button class="tab active" type="button" data-catalog-tab="machines">Machines</button>
+          <button class="tab" type="button" data-catalog-tab="modules">Modules</button>
+          <button class="tab" type="button" data-catalog-tab="recipes">Recipes</button>
+          <button class="tab" type="button" data-catalog-tab="su_sources">SU</button>
+          <button class="tab" type="button" data-catalog-tab="factory_levels">Levels</button>
+        </div>
+        <div id="catalogList" class="catalog-list"></div>
+      </section>
+    </aside>
+
+    <section class="center-stage">
+      <div id="worldStats" class="stats-strip"></div>
+
+      <section class="panel board-panel">
+        <div class="section-title">
+          <h2>Map Test Board</h2>
+          <span id="selectedWorldLabel" class="pill muted">No world</span>
+        </div>
+        <div id="board" class="test-board"></div>
+      </section>
+
+      <section class="panel factory-detail-panel">
+        <div class="section-title">
+          <h2>Selected Factory</h2>
+          <span id="selectedFactoryLabel" class="pill muted">None</span>
+        </div>
+        <div id="factoryDetail"></div>
+      </section>
+    </section>
+
+    <aside class="actions panel">
+      <section>
+        <div class="section-title">
+          <h2>Actions</h2>
+        </div>
+
+        <form id="addInventoryForm" class="action-form">
+          <h3>Test Inventory</h3>
+          <div class="field-row">
+            <label>Item<input id="inventoryItemInput" value="andesite_alloy"></label>
+            <label>Amount<input id="inventoryAmountInput" type="number" min="1" value="50"></label>
+          </div>
+          <button type="submit">Add to World</button>
+        </form>
+
+        <form id="createFactoryForm" class="action-form">
+          <h3>Create Factory</h3>
+          <label>Name<input id="factoryNameInput" value="Ironworks"></label>
+          <div class="field-row">
+            <label>X<input id="factoryXInput" type="number" value="0"></label>
+            <label>Y<input id="factoryYInput" type="number" value="0"></label>
+            <label>Priority<input id="factoryPriorityInput" type="number" value="100"></label>
+          </div>
+          <div class="field-row">
+            <label>Icon<input id="factoryIconInput" value="factory"></label>
+            <label>Theme<input id="factoryThemeInput" value="andesite"></label>
+          </div>
+          <button type="submit">Create Factory</button>
+        </form>
+
+        <form id="createModuleForm" class="action-form">
+          <h3>Create Module</h3>
+          <label>Factory<select id="moduleFactorySelect"></select></label>
+          <label>Module Type<select id="moduleTypeSelect"></select></label>
+          <label>Active Recipe<select id="moduleRecipeSelect"></select></label>
+          <button type="submit">Add Module</button>
+        </form>
+
+        <form id="setRecipeForm" class="action-form">
+          <h3>Module Recipe</h3>
+          <label>Factory<select id="recipeFactorySelect"></select></label>
+          <label>Module<select id="recipeModuleSelect"></select></label>
+          <label>Recipe<select id="recipeSelect"></select></label>
+          <div class="split-actions">
+            <button type="submit">Set Recipe</button>
+            <button id="clearRecipeBtn" type="button" class="secondary">Clear</button>
+          </div>
+        </form>
+
+        <form id="buildMachineForm" class="action-form">
+          <h3>Build Machine</h3>
+          <label>Factory<select id="machineFactorySelect"></select></label>
+          <label>Module<select id="machineModuleSelect"></select></label>
+          <div class="field-row">
+            <label>Machine<select id="machineTypeSelect"></select></label>
+            <label>Level<input id="machineLevelInput" type="number" min="1" value="1"></label>
+          </div>
+          <button type="submit">Build Install</button>
+        </form>
+
+        <form id="factoryInputForm" class="action-form">
+          <h3>Factory Input</h3>
+          <label>Factory<select id="inputFactorySelect"></select></label>
+          <div class="field-row">
+            <label>Item<input id="factoryInputItemInput" value="iron_ingot"></label>
+            <label>Amount<input id="factoryInputAmountInput" type="number" min="1" value="20"></label>
+          </div>
+          <button type="submit">Add Input</button>
+        </form>
+
+        <form id="collectOutputForm" class="action-form">
+          <h3>Collect Output</h3>
+          <label>Factory<select id="collectFactorySelect"></select></label>
+          <div class="field-row">
+            <label>Item<input id="collectItemInput" value="iron_sheet"></label>
+            <label>Amount<input id="collectAmountInput" type="number" min="1" value="1"></label>
+          </div>
+          <button type="submit">Collect</button>
+        </form>
+
+        <form id="createSUSourceForm" class="action-form">
+          <h3>Create SU Source</h3>
+          <label>Type<select id="suTypeSelect"></select></label>
+          <label>Name<input id="suNameInput" value="Water Wheel"></label>
+          <div class="field-row">
+            <label>X<input id="suXInput" type="number" value="6"></label>
+            <label>Y<input id="suYInput" type="number" value="0"></label>
+          </div>
+          <button type="submit">Create Source</button>
+        </form>
+
+        <form id="createNetworkForm" class="action-form">
+          <h3>Create Network</h3>
+          <label>Name<input id="networkNameInput" value="Main Grid"></label>
+          <button type="submit">Create Network</button>
+        </form>
+
+        <form id="connectSourceForm" class="action-form">
+          <h3>Connect Source</h3>
+          <label>Network<select id="connectSourceNetworkSelect"></select></label>
+          <label>Source<select id="connectSourceSelect"></select></label>
+          <button type="submit">Connect Source</button>
+        </form>
+
+        <form id="connectFactoryForm" class="action-form">
+          <h3>Connect Factory</h3>
+          <label>Network<select id="connectFactoryNetworkSelect"></select></label>
+          <label>Factory<select id="connectFactorySelect"></select></label>
+          <button type="submit">Connect Factory</button>
+        </form>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="bottom-panel">
+    <section class="panel log-panel">
+      <div class="section-title">
+        <h2>Action Log</h2>
+        <button id="clearLogBtn" type="button" class="secondary">Clear</button>
+      </div>
+      <div id="actionLog" class="log-list"></div>
+    </section>
+    <section class="panel summary-panel">
+      <div class="section-title">
+        <h2>Last World Summary</h2>
+      </div>
+      <pre id="worldSummary">{}</pre>
+    </section>
+  </footer>
+
+  <template id="emptyTemplate">
+    <div class="empty">No data</div>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

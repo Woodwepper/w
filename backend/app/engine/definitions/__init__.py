@@ -1,0 +1,1 @@
+"""Static engine definition catalogs."""

@@ -2,6 +2,7 @@ from app.engine.entities.machine_instance import MachineInstance
 from app.engine.entities.module_instance import ModuleInstance
 from app.engine.entities.factory_building import FactoryBuilding
 from app.engine.core.statuses import FactoryStatus
+from app.engine.core.statuses import MachineStatus
 from app.engine.definitions.recipe_definition import Recipe
 from app.engine.core.world import World
 
@@ -39,24 +40,24 @@ def process_module(
     if module.active_recipe is None:
         module.status = FactoryStatus.IDLE
         for machine in module.installed_machines:
-            machine.status = FactoryStatus.IDLE
+            machine.status = MachineStatus.IDLE
         return
 
     recipe = world.definitions.get_recipe(module.active_recipe)
     if recipe is None:
         module.status = FactoryStatus.INVALID_RECIPE
-        set_module_machines_status(module, FactoryStatus.INVALID_RECIPE)
+        set_module_machines_status(module, MachineStatus.INVALID_RECIPE)
         return
 
     module_definition = world.definitions.get_module(module.module_type)
     if module_definition is None:
         module.status = FactoryStatus.INVALID_RECIPE
-        set_module_machines_status(module, FactoryStatus.INVALID_RECIPE)
+        set_module_machines_status(module, MachineStatus.INVALID_RECIPE)
         return
 
     if recipe.id not in module_definition.allowed_recipes:
         module.status = FactoryStatus.INVALID_RECIPE
-        set_module_machines_status(module, FactoryStatus.INVALID_RECIPE)
+        set_module_machines_status(module, MachineStatus.INVALID_RECIPE)
         return
 
     compatible_machines = [
@@ -71,7 +72,7 @@ def process_module(
 
     for machine in module.installed_machines:
         if machine not in compatible_machines:
-            machine.status = FactoryStatus.IDLE
+            machine.status = MachineStatus.IDLE
 
     for machine in compatible_machines:
         process_machine(world, factory, module, machine, recipe, seconds)
@@ -90,12 +91,12 @@ def process_machine(
     if seconds <= 0:
         return
 
-    if machine.status == FactoryStatus.UNDERPOWERED:
+    if machine.status == MachineStatus.UNDERPOWERED:
         return
 
     machine_definition = world.definitions.get_machine(machine.machine_type)
     if machine_definition is None:
-        machine.status = FactoryStatus.MISSING_MACHINE
+        machine.status = MachineStatus.MISSING_MACHINE
         return
 
     speed_multiplier = machine_definition.get_speed_multiplier(machine.level)
@@ -104,11 +105,11 @@ def process_machine(
 
     effective_duration = recipe.duration / speed_multiplier
     if effective_duration <= 0:
-        machine.status = FactoryStatus.INVALID_RECIPE
+        machine.status = MachineStatus.INVALID_RECIPE
         return
 
     if not factory_has_required_inputs(factory, recipe):
-        machine.status = FactoryStatus.MISSING_INPUT
+        machine.status = MachineStatus.MISSING_INPUT
         return
 
     remaining_seconds = seconds
@@ -122,7 +123,7 @@ def process_machine(
 
         if remaining_seconds < time_to_complete:
             machine.progress += remaining_seconds
-            machine.status = FactoryStatus.WORKING
+            machine.status = MachineStatus.WORKING
             return
 
         remaining_seconds -= time_to_complete
@@ -132,10 +133,10 @@ def process_machine(
         produced_cycles += 1
 
     if produced_cycles > 0:
-        machine.status = FactoryStatus.WORKING
+        machine.status = MachineStatus.WORKING
         return
 
-    machine.status = FactoryStatus.MISSING_INPUT
+    machine.status = MachineStatus.MISSING_INPUT
 
 
 def machine_can_process_recipe(
@@ -182,7 +183,7 @@ def produce_recipe_outputs(
 
 def set_module_machines_status(
     module: ModuleInstance,
-    status: FactoryStatus,
+    status: MachineStatus,
 ) -> None:
     for machine in module.installed_machines:
         machine.status = status
@@ -194,23 +195,23 @@ def update_module_status_from_machines(
 ) -> None:
     machine_statuses = [machine.status for machine in compatible_machines]
 
-    if any(status == FactoryStatus.WORKING for status in machine_statuses):
+    if any(status == MachineStatus.WORKING for status in machine_statuses):
         module.status = FactoryStatus.WORKING
         return
 
-    if any(status == FactoryStatus.MISSING_INPUT for status in machine_statuses):
+    if any(status == MachineStatus.MISSING_INPUT for status in machine_statuses):
         module.status = FactoryStatus.MISSING_INPUT
         return
 
-    if any(status == FactoryStatus.MISSING_MACHINE for status in machine_statuses):
+    if any(status == MachineStatus.MISSING_MACHINE for status in machine_statuses):
         module.status = FactoryStatus.MISSING_MACHINE
         return
 
-    if any(status == FactoryStatus.INVALID_RECIPE for status in machine_statuses):
+    if any(status == MachineStatus.INVALID_RECIPE for status in machine_statuses):
         module.status = FactoryStatus.INVALID_RECIPE
         return
 
-    if all(status == FactoryStatus.IDLE for status in machine_statuses):
+    if all(status == MachineStatus.IDLE for status in machine_statuses):
         module.status = FactoryStatus.IDLE
         return
 

@@ -1,5 +1,6 @@
 from app.engine.entities.factory_building import FactoryBuilding
 from app.engine.core.statuses import FactoryStatus
+from app.engine.core.statuses import MachineStatus
 from app.engine.entities.producer_building import ProducerBuilding
 from app.engine.core.statuses import ProducerStatus
 from app.engine.core.world import World
@@ -61,7 +62,7 @@ def set_factory_underpowered(factory: FactoryBuilding) -> None:
         module.status = FactoryStatus.UNDERPOWERED
 
         for machine in module.installed_machines:
-            machine.status = FactoryStatus.UNDERPOWERED
+            machine.status = MachineStatus.UNDERPOWERED
 
 
 def clear_factory_underpowered(factory: FactoryBuilding) -> None:
@@ -73,15 +74,15 @@ def clear_factory_underpowered(factory: FactoryBuilding) -> None:
             module.status = FactoryStatus.IDLE
 
         for machine in module.installed_machines:
-            if machine.status == FactoryStatus.UNDERPOWERED:
-                machine.status = FactoryStatus.IDLE
+            if machine.status == MachineStatus.UNDERPOWERED:
+                machine.status = MachineStatus.IDLE
 
 
 def set_producer_underpowered(producer: ProducerBuilding) -> None:
     producer.status = ProducerStatus.UNDERPOWERED
 
     for machine in producer.installed_machines:
-        machine.status = FactoryStatus.UNDERPOWERED
+        machine.status = MachineStatus.UNDERPOWERED
 
 
 def clear_producer_underpowered(producer: ProducerBuilding) -> None:
@@ -89,8 +90,8 @@ def clear_producer_underpowered(producer: ProducerBuilding) -> None:
         producer.status = ProducerStatus.IDLE
 
     for machine in producer.installed_machines:
-        if machine.status == FactoryStatus.UNDERPOWERED:
-            machine.status = FactoryStatus.IDLE
+        if machine.status == MachineStatus.UNDERPOWERED:
+            machine.status = MachineStatus.IDLE
 
 
 def tick(world: World, seconds: float) -> None:

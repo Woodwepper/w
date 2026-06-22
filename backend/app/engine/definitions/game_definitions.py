@@ -43,6 +43,71 @@ class GameDefinitions:
     def get_producer(self, producer_type: str) -> ProducerDefinition | None:
         return self.producers.get(producer_type)
 
+    def to_dict(self) -> dict:
+        return {
+            "machines": {
+                machine_id: machine.to_dict()
+                for machine_id, machine in self.machines.items()
+            },
+            "modules": {
+                module_id: module.to_dict()
+                for module_id, module in self.modules.items()
+            },
+            "recipes": {
+                recipe_id: recipe.to_dict()
+                for recipe_id, recipe in self.recipes.items()
+            },
+            "su_sources": {
+                source_id: su_source.to_dict()
+                for source_id, su_source in self.su_sources.items()
+            },
+            "factory_levels": {
+                level: factory_level.to_dict()
+                for level, factory_level in self.factory_levels.items()
+            },
+            "resource_nodes": {
+                node_id: resource_node.to_dict()
+                for node_id, resource_node in self.resource_nodes.items()
+            },
+            "producers": {
+                producer_id: producer.to_dict()
+                for producer_id, producer in self.producers.items()
+            },
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "GameDefinitions":
+        return cls(
+            machines={
+                machine_id: MachineDefinition.from_dict(machine)
+                for machine_id, machine in data.get("machines", {}).items()
+            },
+            modules={
+                module_id: ModuleDefinition.from_dict(module)
+                for module_id, module in data.get("modules", {}).items()
+            },
+            recipes={
+                recipe_id: Recipe.from_dict(recipe)
+                for recipe_id, recipe in data.get("recipes", {}).items()
+            },
+            su_sources={
+                source_id: SUSourceDefinition.from_dict(su_source)
+                for source_id, su_source in data.get("su_sources", {}).items()
+            },
+            factory_levels={
+                int(level): FactoryLevelDefinition.from_dict(factory_level)
+                for level, factory_level in data.get("factory_levels", {}).items()
+            },
+            resource_nodes={
+                node_id: ResourceNodeDefinition.from_dict(resource_node)
+                for node_id, resource_node in data.get("resource_nodes", {}).items()
+            },
+            producers={
+                producer_id: ProducerDefinition.from_dict(producer)
+                for producer_id, producer in data.get("producers", {}).items()
+            },
+        )
+
 
 def create_default_definitions() -> GameDefinitions:
     from app.engine.content.loader import load_game_definitions_from_template

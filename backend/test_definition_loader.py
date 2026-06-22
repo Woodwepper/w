@@ -77,12 +77,27 @@ def test_3_invalid_recipe_machine_reference_fails(tmp_path: Path) -> None:
         raise AssertionError("Expected DefinitionLoadError")
 
 
+def test_4_game_definitions_roundtrip() -> None:
+    definitions = load_game_definitions_from_template("default")
+    restored = type(definitions).from_dict(definitions.to_dict())
+
+    assert restored.get_machine("mechanical_press").su_cost == 1024
+    assert restored.get_module("pressing_line").allowed_machine_types == [
+        "mechanical_press"
+    ]
+    assert restored.get_recipe("press_iron_sheet").duration == 5.0
+    assert restored.get_factory_level(1).module_slots == 2
+    assert restored.get_resource_node_definition("iron_deposit").resource_type == "raw_iron"
+    assert restored.get_producer("mine").get_level_definition(1).machine_slots == 2
+
+
 TESTS = [
     ("Test 1: carga template default", test_1_load_default_template),
     (
         "Test 2: create_default_definitions usa loader",
         test_2_create_default_definitions_uses_template_loader,
     ),
+    ("Test 4: GameDefinitions roundtrip", test_4_game_definitions_roundtrip),
 ]
 
 
@@ -109,7 +124,8 @@ def main() -> int:
     else:
         print("PASS - Test 3: referencia invalida falla")
 
-    print(f"\nResult: {3 - len(failures)}/3 tests passed")
+    total = len(TESTS) + 1
+    print(f"\nResult: {total - len(failures)}/{total} tests passed")
 
     if failures:
         print("\nFailures:")

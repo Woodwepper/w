@@ -1,4 +1,5 @@
 from app.engine.systems.construction import can_install_machine_in_module
+from app.engine.core.statuses import MachineStatus
 from app.engine.entities.machine_instance import MachineInstance
 from app.engine.entities.module_instance import ModuleInstance
 from app.engine.entities.power_network import PowerNetwork
@@ -142,7 +143,7 @@ def test_1_factory_production_basic() -> None:
     assert len(module.installed_machines) == 2
     assert module.installed_machines[0] is not module.installed_machines[1]
     assert all(machine.progress == 0 for machine in module.installed_machines)
-    assert all(machine.status == FactoryStatus.WORKING for machine in module.installed_machines)
+    assert all(machine.status == MachineStatus.WORKING for machine in module.installed_machines)
 
 
 def test_2_producer_resource_node_basic() -> None:
@@ -159,7 +160,7 @@ def test_2_producer_resource_node_basic() -> None:
     assert len(producer.installed_machines) == 2
     assert producer.installed_machines[0] is not producer.installed_machines[1]
     assert all(machine.progress == 0 for machine in producer.installed_machines)
-    assert all(machine.status == FactoryStatus.WORKING for machine in producer.installed_machines)
+    assert all(machine.status == MachineStatus.WORKING for machine in producer.installed_machines)
 
 
 def test_3_power_network_sufficient() -> None:
@@ -208,7 +209,7 @@ def test_4_power_network_priority_and_underpowered_progress() -> None:
     assert producer.output_items == {}
     assert all(machine.progress == 0 for machine in producer.installed_machines)
     assert all(
-        machine.status == FactoryStatus.UNDERPOWERED
+        machine.status == MachineStatus.UNDERPOWERED
         for machine in producer.installed_machines
     )
 
@@ -311,6 +312,8 @@ def test_8_runtime_serialization_roundtrip() -> None:
     assert len(restored.power_networks) == 1
     assert restored.power_networks[0].consumers[0].consumer_type == "factory"
     assert "su_required" in data
+    assert "su_requiered" not in data
+    assert restored.factories[0].modules[0].installed_machines[0].status == MachineStatus.WORKING
 
 
 TESTS = [

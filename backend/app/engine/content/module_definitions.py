@@ -1,19 +1,6 @@
 from app.engine.definitions.module_definition import ModuleDefinition
 
 
-MACHINE_COUNT_BY_LEVEL = {
-    1: 2,
-    2: 4,
-    3: 6,
-}
-
-EFFICIENCY_MULTIPLIER_BY_LEVEL = {
-    1: 1.0,
-    2: 0.8,
-    3: 0.6,
-}
-
-
 MODULE_DEFINITIONS = {
     "pressing_line": ModuleDefinition(
         id="pressing_line",

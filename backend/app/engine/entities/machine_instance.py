@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.engine.core.statuses import FactoryStatus
+from app.engine.core.statuses import MachineStatus
 
 
 @dataclass
@@ -11,7 +11,7 @@ class MachineInstance:
     level: int = 1
     progress: float = 0.0
     metadata: dict[str, Any] = field(default_factory=dict)
-    status: FactoryStatus = FactoryStatus.IDLE
+    status: MachineStatus = MachineStatus.IDLE
 
     def clear_progress(self) -> None:
         self.progress = 0.0
@@ -37,5 +37,5 @@ class MachineInstance:
             level=max(1, data.get("level", 1)),
             progress=data.get("progress", 0.0),
             metadata=dict(data.get("metadata", {})),
-            status=FactoryStatus(data.get("status", FactoryStatus.IDLE.value)),
+            status=MachineStatus(data.get("status", MachineStatus.IDLE.value)),
         )

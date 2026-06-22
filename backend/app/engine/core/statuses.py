@@ -10,6 +10,15 @@ class FactoryStatus(str, Enum):
     INVALID_RECIPE = "invalid_recipe"
 
 
+class MachineStatus(str, Enum):
+    IDLE = "idle"
+    WORKING = "working"
+    UNDERPOWERED = "underpowered"
+    MISSING_INPUT = "missing_input"
+    MISSING_MACHINE = "missing_machine"
+    INVALID_RECIPE = "invalid_recipe"
+
+
 class ProducerStatus(str, Enum):
     IDLE = "idle"
     WORKING = "working"

@@ -5,6 +5,7 @@ from app.engine.entities.power_network import PowerNetwork
 from app.engine.entities.su_source_instance import SUSourceInstance
 from app.engine.entities.factory_building import FactoryBuilding
 from app.engine.core.statuses import FactoryStatus
+from app.engine.core.statuses import MachineStatus
 from app.engine.definitions.game_definitions import create_default_definitions
 from app.engine.core.world import World
 from app.engine.systems.power import calculate_factory_su_required, calculate_machine_su_required
@@ -326,7 +327,7 @@ def test_11_missing_inputs_do_not_accumulate_progress() -> None:
 
     tick(world, 20)
 
-    assert machine.status == FactoryStatus.MISSING_INPUT
+    assert machine.status == MachineStatus.MISSING_INPUT
     assert machine.progress == 0
     assert factory.get_output_amount("iron_sheet") == 0
 
@@ -347,7 +348,7 @@ def test_12_inputs_after_missing_do_not_instantly_produce() -> None:
     factory.add_input_item("iron_ingot", 1)
     tick(world, 1)
 
-    assert machine.status == FactoryStatus.WORKING
+    assert machine.status == MachineStatus.WORKING
     assert machine.progress == 1
     assert factory.get_input_amount("iron_ingot") == 1
     assert factory.get_output_amount("iron_sheet") == 0
@@ -365,13 +366,13 @@ def test_13_invalid_recipe_clears_machine_statuses() -> None:
     machine = module.installed_machines[0]
 
     tick(world, 1)
-    assert machine.status == FactoryStatus.WORKING
+    assert machine.status == MachineStatus.WORKING
 
     module.set_active_recipe("smelt_crushed_iron")
     tick(world, 1)
 
     assert module.status == FactoryStatus.INVALID_RECIPE
-    assert machine.status == FactoryStatus.INVALID_RECIPE
+    assert machine.status == MachineStatus.INVALID_RECIPE
     assert factory.get_output_amount("iron_ingot") == 0
 
 
@@ -395,7 +396,10 @@ def test_15_world_to_dict_uses_su_required() -> None:
     data = world.to_dict()
 
     assert data["su_required"] == 1234
-    assert data["su_requiered"] == 1234
+    assert "su_requiered" not in data
+
+    restored = World.from_dict({"id": 2, "name": "Old Save", "su_requiered": 4321})
+    assert restored.su_required == 4321
 
 
 def test_16_missing_inputs_preserve_real_progress_only() -> None:

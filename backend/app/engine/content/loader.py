@@ -46,7 +46,7 @@ def load_game_definitions_from_path(path: str | Path):
             for machine_id, data in raw_data["machines"].items()
         },
         modules={
-            module_id: ModuleDefinition(**data)
+            module_id: ModuleDefinition.from_dict(data)
             for module_id, data in raw_data["modules"].items()
         },
         recipes={
@@ -54,11 +54,11 @@ def load_game_definitions_from_path(path: str | Path):
             for recipe_id, data in raw_data["recipes"].items()
         },
         su_sources={
-            source_id: _su_source_definition_from_dict(data)
+            source_id: SUSourceDefinition.from_dict(data)
             for source_id, data in raw_data["su_sources"].items()
         },
         factory_levels={
-            int(level): _factory_level_definition_from_dict(data)
+            int(level): FactoryLevelDefinition.from_dict(data)
             for level, data in raw_data["factory_levels"].items()
         },
         resource_nodes={
@@ -147,26 +147,6 @@ def _load_json_object(path: Path) -> dict[str, Any]:
         raise DefinitionLoadError(f"Definition file must contain an object: {path}")
 
     return data
-
-
-def _factory_level_definition_from_dict(data: dict[str, Any]) -> FactoryLevelDefinition:
-    return FactoryLevelDefinition(
-        level=int(data["level"]),
-        module_slots=int(data["module_slots"]),
-        machine_slots_per_module=int(data["machine_slots_per_module"]),
-        upgrade_cost=dict(data.get("upgrade_cost", {})),
-    )
-
-
-def _su_source_definition_from_dict(data: dict[str, Any]) -> SUSourceDefinition:
-    return SUSourceDefinition(
-        id=data["id"],
-        name=data["name"],
-        su_output=int(data["su_output"]),
-        build_cost=dict(data.get("build_cost", {})),
-        icon=data.get("icon", "su_source"),
-        visual_key=data.get("visual_key", "su_source"),
-    )
 
 
 def _validate_mapping_ids(label: str, items: dict[str, Any]) -> None:

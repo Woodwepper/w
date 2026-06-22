@@ -6,7 +6,7 @@ from app.engine.systems.construction import (
     upgrade_machine,
 )
 from app.engine.entities.machine_instance import MachineInstance
-from app.engine.core.statuses import FactoryStatus
+from app.engine.core.statuses import MachineStatus
 from app.engine.entities.producer_building import ProducerBuilding
 from app.engine.definitions.producer_definition import ProducerDefinition
 from app.engine.core.statuses import ProducerStatus
@@ -170,7 +170,7 @@ def process_producer(
     machine_results = []
     for machine in producer.installed_machines:
         if node.is_depleted():
-            machine.status = FactoryStatus.IDLE
+            machine.status = MachineStatus.IDLE
             continue
         machine_results.append(
             process_producer_machine(
@@ -199,7 +199,7 @@ def process_producer_machine(
     machine: MachineInstance,
     seconds: float,
 ) -> str:
-    if machine.status == FactoryStatus.UNDERPOWERED:
+    if machine.status == MachineStatus.UNDERPOWERED:
         return "underpowered"
 
     producer_definition = world.definitions.get_producer(producer.producer_type)
@@ -211,15 +211,15 @@ def process_producer_machine(
         or machine_definition is None
         or machine.machine_type not in producer_definition.allowed_machine_types
     ):
-        machine.status = FactoryStatus.MISSING_MACHINE
+        machine.status = MachineStatus.MISSING_MACHINE
         return "invalid_machine"
 
     if machine.level < node.required_machine_level:
-        machine.status = FactoryStatus.IDLE
+        machine.status = MachineStatus.IDLE
         return "insufficient_level"
 
     if node.is_depleted():
-        machine.status = FactoryStatus.IDLE
+        machine.status = MachineStatus.IDLE
         machine.clear_progress()
         return "depleted"
 
@@ -229,13 +229,13 @@ def process_producer_machine(
         / machine_definition.get_speed_multiplier(machine.level)
     )
     if effective_duration <= 0:
-        machine.status = FactoryStatus.IDLE
+        machine.status = MachineStatus.IDLE
         return "invalid_machine"
 
     machine.progress += seconds
     completed_cycles = int(machine.progress // effective_duration)
     if completed_cycles <= 0:
-        machine.status = FactoryStatus.WORKING
+        machine.status = MachineStatus.WORKING
         return "working"
 
     output_amount = (
@@ -245,14 +245,14 @@ def process_producer_machine(
     )
     output_amount = _clamp_output_to_remaining_node_amount(node, output_amount)
     if output_amount <= 0:
-        machine.status = FactoryStatus.IDLE
+        machine.status = MachineStatus.IDLE
         machine.clear_progress()
         return "depleted"
 
     producer.add_output_item(node_definition.resource_type, output_amount)
     _consume_node_amount(node, output_amount)
     machine.progress = machine.progress % effective_duration
-    machine.status = FactoryStatus.WORKING
+    machine.status = MachineStatus.WORKING
 
     if node.is_depleted():
         machine.clear_progress()
@@ -263,9 +263,9 @@ def process_producer_machine(
 
 def _idle_producer_machines(producer: ProducerBuilding) -> None:
     for machine in producer.installed_machines:
-        if machine.status == FactoryStatus.UNDERPOWERED:
+        if machine.status == MachineStatus.UNDERPOWERED:
             continue
-        machine.status = FactoryStatus.IDLE
+        machine.status = MachineStatus.IDLE
 
 
 def _clamp_output_to_remaining_node_amount(

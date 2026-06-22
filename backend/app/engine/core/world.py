@@ -29,16 +29,8 @@ class World:
     producers: list[ProducerBuilding] = field(default_factory=list)
 
     su_produced: int = 0
-    su_requiered: int = 0
+    su_required: int = 0
     su_available: int = 0
-
-    @property
-    def su_required(self) -> int:
-        return self.su_requiered
-
-    @su_required.setter
-    def su_required(self, value: int) -> None:
-        self.su_requiered = value
 
     def add_inventory_item(self, item_id: str, amount: int) -> None:
         self.inventory[item_id] = self.get_inventory_amount(item_id) + amount
@@ -168,7 +160,7 @@ class World:
                 for item in data.get("producers", [])
             ],
             su_produced=data.get("su_produced", 0),
-            su_requiered=data.get("su_requiered", data.get("su_required", 0)),
+            su_required=data.get("su_required", data.get("su_requiered", 0)),
             su_available=data.get("su_available", 0),
         )
 
@@ -185,7 +177,6 @@ class World:
             "producers": [p.to_dict() for p in self.producers],
             "su_produced": self.su_produced,
             "su_required": self.su_required,
-            "su_requiered": self.su_requiered,
             "su_available": self.su_available,
         }
 

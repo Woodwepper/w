@@ -40,24 +40,3 @@ class Recipe:
 
     def get_output_amount(self, item_id: str) -> int:
         return self.output_items.get(item_id, 0)
-
-
-def recipe_exists(recipe_id: str) -> bool:
-    from app.engine.content.recipe_definitions import RECIPES
-
-    return recipe_id in RECIPES
-
-
-def get_recipe(recipe_id: str) -> Recipe | None:
-    from app.engine.content.recipe_definitions import RECIPES
-
-    return RECIPES.get(recipe_id)
-
-
-def __getattr__(name: str):
-    if name == "RECIPES":
-        from app.engine.content.recipe_definitions import RECIPES
-
-        return RECIPES
-
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

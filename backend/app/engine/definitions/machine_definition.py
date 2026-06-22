@@ -54,12 +54,3 @@ class MachineDefinition:
             icon=data.get("icon", "machine"),
             visual_key=data.get("visual_key", "machine"),
         )
-
-
-def __getattr__(name: str):
-    if name == "MACHINE_DEFINITIONS":
-        from app.engine.content.machine_definitions import MACHINE_DEFINITIONS
-
-        return MACHINE_DEFINITIONS
-
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

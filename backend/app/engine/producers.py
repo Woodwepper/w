@@ -1,3 +1,12 @@
+from typing import Any
+
+from app.engine.construction import (
+    build_machine_from_resources,
+    can_build_machine_from_resources,
+    upgrade_machine,
+)
+from app.engine.instances.machine_instance import MachineInstance
+from app.engine.models.factory_status import FactoryStatus
 from app.engine.models.producer_building import ProducerBuilding
 from app.engine.models.producer_definition import ProducerDefinition
 from app.engine.models.producer_status import ProducerStatus
@@ -5,43 +14,118 @@ from app.engine.models.resource_node import ResourceNode
 from app.engine.models.world import World
 
 
-MACHINE_COUNT_BY_LEVEL = {
-    1: 2,
-    2: 4,
-    3: 6,
-}
-
-EFFICIENCY_MULTIPLIER_BY_LEVEL = {
-    1: 1.0,
-    2: 0.8,
-    3: 0.6,
-}
-
-
-def get_producer_machine_count(producer: ProducerBuilding) -> int:
-    return MACHINE_COUNT_BY_LEVEL.get(producer.machine_level, MACHINE_COUNT_BY_LEVEL[1])
-
-
-def get_producer_efficiency_multiplier(producer: ProducerBuilding) -> float:
-    return EFFICIENCY_MULTIPLIER_BY_LEVEL.get(
-        producer.efficiency_level,
-        EFFICIENCY_MULTIPLIER_BY_LEVEL[1],
-    )
-
-
 def calculate_producer_su_required(
     world: World,
     producer: ProducerBuilding,
 ) -> int:
-    producer_definition = world.definitions.get_producer(producer.producer_type)
+    total = 0
+
+    for machine in producer.installed_machines:
+        machine_definition = world.definitions.get_machine(machine.machine_type)
+        if machine_definition is None:
+            continue
+        total += machine_definition.su_cost
+
+    return total
+
+
+def can_install_machine_in_producer(
+    producer: ProducerBuilding | None,
+    machine: MachineInstance | None,
+    definitions,
+) -> bool:
+    if producer is None or machine is None:
+        return False
+
+    producer_definition = definitions.get_producer(producer.producer_type)
     if producer_definition is None:
-        return 0
+        return False
 
-    machine_definition = world.definitions.get_machine(producer_definition.machine_id)
+    machine_definition = definitions.get_machine(machine.machine_type)
     if machine_definition is None:
-        return 0
+        return False
 
-    return machine_definition.su_cost * get_producer_machine_count(producer)
+    if machine.machine_type not in producer_definition.allowed_machine_types:
+        return False
+
+    if producer.get_machine(machine.id) is not None:
+        return False
+
+    if len(producer.installed_machines) >= producer.get_machine_slot_limit(definitions):
+        return False
+
+    return True
+
+
+def install_machine_in_producer(
+    producer: ProducerBuilding | None,
+    machine: MachineInstance,
+    definitions,
+) -> bool:
+    if not can_install_machine_in_producer(producer, machine, definitions):
+        return False
+
+    producer.add_machine(machine)
+    return True
+
+
+def build_and_install_machine_in_producer_from_resources(
+    world: World | None,
+    producer_id: int,
+    machine_type: str,
+    machine_id: int,
+    level: int = 1,
+    metadata: dict[str, Any] | None = None,
+) -> bool:
+    if world is None:
+        return False
+
+    producer = world.get_producer(producer_id)
+    if producer is None:
+        return False
+
+    proposed_machine = MachineInstance(
+        id=machine_id,
+        machine_type=machine_type,
+        level=max(1, level),
+        metadata=dict(metadata or {}),
+    )
+    if not can_install_machine_in_producer(
+        producer,
+        proposed_machine,
+        world.definitions,
+    ):
+        return False
+
+    if not can_build_machine_from_resources(
+        world.inventory,
+        world.definitions,
+        machine_type,
+    ):
+        return False
+
+    machine = build_machine_from_resources(
+        world.inventory,
+        world.definitions,
+        machine_type,
+        machine_id,
+        level=level,
+        metadata=metadata,
+    )
+    if machine is None:
+        return False
+
+    producer.add_machine(machine)
+    return True
+
+
+def upgrade_producer_machine(
+    inventory: dict[str, int],
+    definitions,
+    machine: MachineInstance,
+    target_level: int,
+) -> bool:
+    return upgrade_machine(inventory, definitions, machine, target_level)
 
 
 def process_producers(world: World, seconds: float) -> None:
@@ -64,82 +148,124 @@ def process_producer(
     node = world.get_resource_node(producer.resource_node_id)
     if producer_definition is None or node is None:
         producer.status = ProducerStatus.INVALID_NODE
+        _idle_producer_machines(producer)
         return
 
     node_definition = world.definitions.get_resource_node_definition(node.node_type)
     if node_definition is None:
         producer.status = ProducerStatus.INVALID_NODE
+        _idle_producer_machines(producer)
         return
 
     if node.node_type not in producer_definition.allowed_node_types:
         producer.status = ProducerStatus.INVALID_NODE
+        _idle_producer_machines(producer)
         return
 
-    if producer.machine_level < node.required_machine_level:
+    if node.is_depleted():
+        producer.status = ProducerStatus.DEPLETED
+        _idle_producer_machines(producer)
+        return
+
+    machine_results = []
+    for machine in producer.installed_machines:
+        if node.is_depleted():
+            machine.status = FactoryStatus.IDLE
+            continue
+        machine_results.append(
+            process_producer_machine(
+                world,
+                producer,
+                node,
+                machine,
+                seconds,
+            )
+        )
+
+    if node.is_depleted():
+        producer.status = ProducerStatus.DEPLETED
+    elif any(result == "working" for result in machine_results):
+        producer.status = ProducerStatus.WORKING
+    elif any(result == "insufficient_level" for result in machine_results):
         producer.status = ProducerStatus.INSUFFICIENT_LEVEL
-        return
-
-    if node.is_depleted():
-        producer.status = ProducerStatus.DEPLETED
-        return
-
-    final_duration = _get_final_duration(producer, producer_definition, node)
-    if final_duration <= 0:
-        producer.status = ProducerStatus.INVALID_NODE
-        return
-
-    producer.progress += seconds
-    completed_cycles = int(producer.progress // final_duration)
-    if completed_cycles <= 0:
-        producer.status = ProducerStatus.WORKING
-        return
-
-    output_amount = _calculate_output_amount(
-        producer,
-        producer_definition,
-        node,
-        completed_cycles,
-    )
-    output_amount = _clamp_output_to_remaining_node_amount(node, output_amount)
-    if output_amount <= 0:
-        producer.status = ProducerStatus.DEPLETED
-        producer.progress = 0.0
-        return
-
-    producer.add_output_item(node_definition.resource_type, output_amount)
-    _consume_node_amount(node, output_amount)
-    producer.progress = producer.progress % final_duration
-
-    if node.is_depleted():
-        producer.status = ProducerStatus.DEPLETED
     else:
-        producer.status = ProducerStatus.WORKING
+        producer.status = ProducerStatus.IDLE
 
 
-def _get_final_duration(
+def process_producer_machine(
+    world: World,
     producer: ProducerBuilding,
-    producer_definition: ProducerDefinition,
     node: ResourceNode,
-) -> float:
-    return (
+    machine: MachineInstance,
+    seconds: float,
+) -> str:
+    if machine.status == FactoryStatus.UNDERPOWERED:
+        return "underpowered"
+
+    producer_definition = world.definitions.get_producer(producer.producer_type)
+    node_definition = world.definitions.get_resource_node_definition(node.node_type)
+    machine_definition = world.definitions.get_machine(machine.machine_type)
+    if (
+        producer_definition is None
+        or node_definition is None
+        or machine_definition is None
+        or machine.machine_type not in producer_definition.allowed_machine_types
+    ):
+        machine.status = FactoryStatus.MISSING_MACHINE
+        return "invalid_machine"
+
+    if machine.level < node.required_machine_level:
+        machine.status = FactoryStatus.IDLE
+        return "insufficient_level"
+
+    if node.is_depleted():
+        machine.status = FactoryStatus.IDLE
+        machine.clear_progress()
+        return "depleted"
+
+    effective_duration = (
         producer_definition.base_duration
         * node.hardness
-        * get_producer_efficiency_multiplier(producer)
+        / machine_definition.get_speed_multiplier(machine.level)
     )
+    if effective_duration <= 0:
+        machine.status = FactoryStatus.IDLE
+        return "invalid_machine"
 
+    machine.progress += seconds
+    completed_cycles = int(machine.progress // effective_duration)
+    if completed_cycles <= 0:
+        machine.status = FactoryStatus.WORKING
+        return "working"
 
-def _calculate_output_amount(
-    producer: ProducerBuilding,
-    producer_definition: ProducerDefinition,
-    node: ResourceNode,
-    completed_cycles: int,
-) -> int:
-    return (
+    output_amount = (
         producer_definition.base_output_amount
-        * get_producer_machine_count(producer)
         * node.richness
         * completed_cycles
     )
+    output_amount = _clamp_output_to_remaining_node_amount(node, output_amount)
+    if output_amount <= 0:
+        machine.status = FactoryStatus.IDLE
+        machine.clear_progress()
+        return "depleted"
+
+    producer.add_output_item(node_definition.resource_type, output_amount)
+    _consume_node_amount(node, output_amount)
+    machine.progress = machine.progress % effective_duration
+    machine.status = FactoryStatus.WORKING
+
+    if node.is_depleted():
+        machine.clear_progress()
+        return "depleted"
+
+    return "working"
+
+
+def _idle_producer_machines(producer: ProducerBuilding) -> None:
+    for machine in producer.installed_machines:
+        if machine.status == FactoryStatus.UNDERPOWERED:
+            continue
+        machine.status = FactoryStatus.IDLE
 
 
 def _clamp_output_to_remaining_node_amount(

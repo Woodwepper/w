@@ -96,8 +96,7 @@ class CreateProducerRequest(BaseModel):
     producer_type: str
     name: str
     resource_node_id: int
-    machine_level: int = 1
-    efficiency_level: int = 1
+    level: int = 1
     priority: int = 100
 
 

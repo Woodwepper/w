@@ -170,3 +170,13 @@ def get_producer_or_404(
     if producer is None:
         raise HTTPException(status_code=404, detail="Producer not found")
     return producer
+
+
+def get_producer_machine_or_404(
+    producer: ProducerBuilding,
+    machine_id: int,
+) -> MachineInstance:
+    machine = producer.get_machine(machine_id)
+    if machine is None:
+        raise HTTPException(status_code=404, detail="Machine not found")
+    return machine

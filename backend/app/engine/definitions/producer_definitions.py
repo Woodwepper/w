@@ -1,4 +1,32 @@
 from app.engine.models.producer_definition import ProducerDefinition
+from app.engine.models.producer_level_definition import ProducerLevelDefinition
+
+
+DEFAULT_LEVELS = {
+    1: ProducerLevelDefinition(
+        level=1,
+        machine_slots=2,
+        upgrade_cost={},
+    ),
+    2: ProducerLevelDefinition(
+        level=2,
+        machine_slots=4,
+        upgrade_cost={
+            "andesite_alloy": 8,
+            "iron_sheet": 6,
+            "shaft": 4,
+        },
+    ),
+    3: ProducerLevelDefinition(
+        level=3,
+        machine_slots=6,
+        upgrade_cost={
+            "andesite_alloy": 16,
+            "iron_sheet": 12,
+            "machine_parts": 2,
+        },
+    ),
+}
 
 
 PRODUCER_DEFINITIONS = {
@@ -12,7 +40,8 @@ PRODUCER_DEFINITIONS = {
         ],
         base_duration=5.0,
         base_output_amount=1,
-        machine_id="mechanical_drill",
+        allowed_machine_types=["mechanical_drill"],
+        levels=DEFAULT_LEVELS,
         icon="mine",
         visual_key="mine",
     ),
@@ -22,7 +51,8 @@ PRODUCER_DEFINITIONS = {
         allowed_node_types=["stone_outcrop"],
         base_duration=5.0,
         base_output_amount=1,
-        machine_id="mechanical_drill",
+        allowed_machine_types=["mechanical_drill"],
+        levels=DEFAULT_LEVELS,
         icon="quarry",
         visual_key="quarry",
     ),
@@ -32,7 +62,8 @@ PRODUCER_DEFINITIONS = {
         allowed_node_types=["forest"],
         base_duration=6.0,
         base_output_amount=1,
-        machine_id="mechanical_saw",
+        allowed_machine_types=["mechanical_saw"],
+        levels=DEFAULT_LEVELS,
         icon="lumber",
         visual_key="lumber_camp",
     ),
@@ -42,7 +73,8 @@ PRODUCER_DEFINITIONS = {
         allowed_node_types=["water_source"],
         base_duration=4.0,
         base_output_amount=1,
-        machine_id="mechanical_pump",
+        allowed_machine_types=["mechanical_pump"],
+        levels=DEFAULT_LEVELS,
         icon="pump",
         visual_key="water_pump",
     ),

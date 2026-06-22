@@ -80,10 +80,17 @@ def clear_factory_underpowered(factory: FactoryBuilding) -> None:
 def set_producer_underpowered(producer: ProducerBuilding) -> None:
     producer.status = ProducerStatus.UNDERPOWERED
 
+    for machine in producer.installed_machines:
+        machine.status = FactoryStatus.UNDERPOWERED
+
 
 def clear_producer_underpowered(producer: ProducerBuilding) -> None:
     if producer.status == ProducerStatus.UNDERPOWERED:
         producer.status = ProducerStatus.IDLE
+
+    for machine in producer.installed_machines:
+        if machine.status == FactoryStatus.UNDERPOWERED:
+            machine.status = FactoryStatus.IDLE
 
 
 def tick(world: World, seconds: float) -> None:

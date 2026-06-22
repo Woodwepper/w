@@ -28,6 +28,7 @@ from app.engine.construction import (
     can_build_machine_from_resources,
     upgrade_machine,
 )
+from app.engine.instances.machine_instance import MachineInstance
 from app.engine.instances.module_instance import ModuleInstance
 from app.engine.instances.power_network import PowerNetwork, PowerConsumerRef
 from app.engine.instances.su_source_instance import SUSourceInstance
@@ -35,8 +36,9 @@ from app.engine.models.factory_building import FactoryBuilding
 from app.engine.models.producer_building import ProducerBuilding
 from app.engine.models.resource_node import ResourceNode
 from app.engine.producers import (
-    EFFICIENCY_MULTIPLIER_BY_LEVEL,
-    MACHINE_COUNT_BY_LEVEL,
+    build_and_install_machine_in_producer_from_resources,
+    can_install_machine_in_producer,
+    upgrade_producer_machine,
 )
 from app.engine.models.world import World
 from app.engine.simulation import tick
@@ -120,11 +122,13 @@ def validate_producer_type(world: World, producer_type: str) -> None:
         bad_request("producer_type does not exist")
 
 
-def validate_producer_levels(machine_level: int, efficiency_level: int) -> None:
-    if machine_level not in MACHINE_COUNT_BY_LEVEL:
-        bad_request("machine_level is not defined")
-    if efficiency_level not in EFFICIENCY_MULTIPLIER_BY_LEVEL:
-        bad_request("efficiency_level is not defined")
+def validate_producer_level(world: World, producer_type: str, level: int) -> None:
+    producer_definition = world.definitions.get_producer(producer_type)
+    if producer_definition is None:
+        bad_request("producer_type does not exist")
+
+    if producer_definition.get_level_definition(level) is None:
+        bad_request("producer level is not defined")
 
 
 def validate_producer_can_use_node(
@@ -138,6 +142,19 @@ def validate_producer_can_use_node(
 
     if node_type not in producer_definition.allowed_node_types:
         bad_request("Producer type is not compatible with this resource node")
+
+
+def validate_machine_allowed_in_producer(
+    world: World,
+    producer: ProducerBuilding,
+    machine_type: str,
+) -> None:
+    producer_definition = world.definitions.get_producer(producer.producer_type)
+    if producer_definition is None:
+        bad_request("producer_type does not exist")
+
+    if machine_type not in producer_definition.allowed_machine_types:
+        bad_request("Machine type is not compatible with this producer")
 
 
 def validate_power_consumer_type(consumer_type: str) -> None:
@@ -369,7 +386,7 @@ def create_producer(
 ):
     world = memory_store.get_world_or_404(world_id)
     validate_producer_type(world, request.producer_type)
-    validate_producer_levels(request.machine_level, request.efficiency_level)
+    validate_producer_level(world, request.producer_type, request.level)
     resource_node = memory_store.get_resource_node_or_404(
         world,
         request.resource_node_id,
@@ -387,8 +404,7 @@ def create_producer(
         resource_node_id=resource_node.id,
         x=resource_node.x,
         y=resource_node.y,
-        machine_level=request.machine_level,
-        efficiency_level=request.efficiency_level,
+        level=request.level,
         priority=request.priority,
     )
     world.add_producer(producer)
@@ -402,6 +418,106 @@ def get_producer(
 ):
     world = memory_store.get_world_or_404(world_id)
     producer = memory_store.get_producer_or_404(world, producer_id)
+    return producer.to_dict()
+
+
+@router.post("/worlds/{world_id}/producers/{producer_id}/level-up")
+def level_up_producer(
+    world_id: int,
+    producer_id: int,
+):
+    world = memory_store.get_world_or_404(world_id)
+    producer = memory_store.get_producer_or_404(world, producer_id)
+
+    if not producer.level_up(world.definitions, world.inventory):
+        bad_request("Not enough resources or no next producer level")
+
+    return world.to_dict()
+
+
+@router.post("/worlds/{world_id}/producers/{producer_id}/machines/build-install")
+def build_install_producer_machine(
+    world_id: int,
+    producer_id: int,
+    request: BuildInstallMachineRequest,
+):
+    world = memory_store.get_world_or_404(world_id)
+    producer = memory_store.get_producer_or_404(world, producer_id)
+
+    if request.level < 1:
+        bad_request("level must be greater than or equal to 1")
+
+    validate_machine_type(world, request.machine_type)
+    validate_machine_allowed_in_producer(world, producer, request.machine_type)
+
+    proposed_machine = MachineInstance(
+        id=-1,
+        machine_type=request.machine_type,
+        level=request.level,
+        metadata=dict(request.metadata),
+    )
+    if not can_install_machine_in_producer(
+        producer,
+        proposed_machine,
+        world.definitions,
+    ):
+        bad_request("Producer machine slot limit reached or duplicate machine")
+
+    if not can_build_machine_from_resources(
+        world.inventory,
+        world.definitions,
+        request.machine_type,
+    ):
+        bad_request("Not enough resources to build machine")
+
+    machine_id = memory_store.allocate_machine_id()
+    installed = build_and_install_machine_in_producer_from_resources(
+        world,
+        producer.id,
+        request.machine_type,
+        machine_id,
+        level=request.level,
+        metadata=request.metadata,
+    )
+    if not installed:
+        bad_request("Could not build and install machine")
+
+    return producer.to_dict()
+
+
+@router.patch("/worlds/{world_id}/producers/{producer_id}/machines/{machine_id}/upgrade")
+def upgrade_producer_machine_endpoint(
+    world_id: int,
+    producer_id: int,
+    machine_id: int,
+    request: UpgradeMachineRequest,
+):
+    world = memory_store.get_world_or_404(world_id)
+    producer = memory_store.get_producer_or_404(world, producer_id)
+    machine = memory_store.get_producer_machine_or_404(producer, machine_id)
+
+    if not upgrade_producer_machine(
+        world.inventory,
+        world.definitions,
+        machine,
+        request.target_level,
+    ):
+        bad_request("Machine cannot be upgraded to target_level")
+
+    return producer.to_dict()
+
+
+@router.delete("/worlds/{world_id}/producers/{producer_id}/machines/{machine_id}")
+def delete_producer_machine(
+    world_id: int,
+    producer_id: int,
+    machine_id: int,
+):
+    world = memory_store.get_world_or_404(world_id)
+    producer = memory_store.get_producer_or_404(world, producer_id)
+    memory_store.get_producer_machine_or_404(producer, machine_id)
+
+    producer.remove_machine(machine_id)
     return producer.to_dict()
 
 

@@ -11,6 +11,7 @@ from app.engine.models.factory_level_definition import FactoryLevelDefinition
 from app.engine.models.machine_definition import MachineDefinition
 from app.engine.models.module_definition import ModuleDefinition
 from app.engine.models.producer_definition import ProducerDefinition
+from app.engine.models.producer_level_definition import ProducerLevelDefinition
 from app.engine.models.recipe import Recipe
 from app.engine.models.resource_node_definition import ResourceNodeDefinition
 from app.engine.models.su_source_definition import SUSourceDefinition
@@ -86,6 +87,28 @@ def create_default_definitions() -> GameDefinitions:
         for module_id, module in MODULE_DEFINITIONS.items()
     }
 
+    producers = {
+        producer_id: ProducerDefinition(
+            id=producer.id,
+            name=producer.name,
+            allowed_node_types=list(producer.allowed_node_types),
+            allowed_machine_types=list(producer.allowed_machine_types),
+            base_duration=producer.base_duration,
+            base_output_amount=producer.base_output_amount,
+            levels={
+                level: ProducerLevelDefinition(
+                    level=level_definition.level,
+                    machine_slots=level_definition.machine_slots,
+                    upgrade_cost=dict(level_definition.upgrade_cost),
+                )
+                for level, level_definition in producer.levels.items()
+            },
+            icon=producer.icon,
+            visual_key=producer.visual_key,
+        )
+        for producer_id, producer in PRODUCER_DEFINITIONS.items()
+    }
+
     return GameDefinitions(
         machines=machines,
         modules=modules,
@@ -93,5 +116,5 @@ def create_default_definitions() -> GameDefinitions:
         su_sources=dict(SU_SOURCE_DEFINITIONS),
         factory_levels=dict(FACTORY_LEVEL_DEFINITIONS),
         resource_nodes=dict(RESOURCE_NODE_DEFINITIONS),
-        producers=dict(PRODUCER_DEFINITIONS),
+        producers=producers,
     )

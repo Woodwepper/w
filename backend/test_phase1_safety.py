@@ -310,10 +310,25 @@ def test_8_runtime_serialization_roundtrip() -> None:
     assert len(restored.producers[0].installed_machines) == 2
     assert len(restored.su_sources) == 1
     assert len(restored.power_networks) == 1
+    assert "sources" in data["power_networks"][0]
+    assert "source_ids" not in data["power_networks"][0]
+    assert restored.power_networks[0].sources[0].source_type == "su_source"
+    assert restored.power_networks[0].sources[0].source_id == 1
     assert restored.power_networks[0].consumers[0].consumer_type == "factory"
     assert "su_required" in data
     assert "su_requiered" not in data
     assert restored.factories[0].modules[0].installed_machines[0].status == MachineStatus.WORKING
+
+    legacy_network = PowerNetwork.from_dict(
+        {
+            "id": 99,
+            "name": "Legacy Network",
+            "source_ids": [7],
+            "consumers": [],
+        }
+    )
+    assert legacy_network.sources[0].source_type == "su_source"
+    assert legacy_network.sources[0].source_id == 7
 
 
 TESTS = [

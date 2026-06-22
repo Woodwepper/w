@@ -2,6 +2,25 @@ from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
+class PowerSourceRef:
+    source_type: str
+    source_id: int
+
+    def to_dict(self) -> dict:
+        return {
+            "source_type": self.source_type,
+            "source_id": self.source_id,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "PowerSourceRef":
+        return cls(
+            source_type=data["source_type"],
+            source_id=data["source_id"],
+        )
+
+
+@dataclass(frozen=True)
 class PowerConsumerRef:
     consumer_type: str
     consumer_id: int
@@ -24,17 +43,25 @@ class PowerConsumerRef:
 class PowerNetwork:
     id: int
     name: str
-    source_ids: list[int] = field(default_factory=list)
+    sources: list[PowerSourceRef] = field(default_factory=list)
     consumers: list[PowerConsumerRef] = field(default_factory=list)
 
-    def add_source(self, source_id: int) -> None:
-        if source_id not in self.source_ids:
-            self.source_ids.append(source_id)
+    def add_source(self, source_id: int, source_type: str = "su_source") -> None:
+        source = PowerSourceRef(
+            source_type=source_type,
+            source_id=source_id,
+        )
+        if source not in self.sources:
+            self.sources.append(source)
 
-    def remove_source(self, source_id: int) -> bool:
-        if source_id not in self.source_ids:
+    def remove_source(self, source_id: int, source_type: str = "su_source") -> bool:
+        source = PowerSourceRef(
+            source_type=source_type,
+            source_id=source_id,
+        )
+        if source not in self.sources:
             return False
-        self.source_ids.remove(source_id)
+        self.sources.remove(source)
         return True
 
     def add_consumer(self, consumer_type: str, consumer_id: int) -> None:
@@ -59,7 +86,10 @@ class PowerNetwork:
         return {
             "id": self.id,
             "name": self.name,
-            "source_ids": list(self.source_ids),
+            "sources": [
+                source.to_dict()
+                for source in self.sources
+            ],
             "consumers": [
                 consumer.to_dict()
                 for consumer in self.consumers
@@ -68,10 +98,20 @@ class PowerNetwork:
 
     @classmethod
     def from_dict(cls, data: dict) -> "PowerNetwork":
+        sources = [
+            PowerSourceRef.from_dict(item) if isinstance(item, dict) else item
+            for item in data.get("sources", [])
+        ]
+        if not sources:
+            sources = [
+                PowerSourceRef(source_type="su_source", source_id=source_id)
+                for source_id in data.get("source_ids", [])
+            ]
+
         return cls(
             id=data["id"],
             name=data["name"],
-            source_ids=list(data.get("source_ids", [])),
+            sources=sources,
             consumers=[
                 PowerConsumerRef.from_dict(item) if isinstance(item, dict) else item
                 for item in data.get("consumers", [])

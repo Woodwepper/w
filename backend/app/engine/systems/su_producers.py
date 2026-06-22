@@ -57,6 +57,53 @@ def calculate_su_producer_output(
     return total_output
 
 
+def consume_su_producer_inputs(
+    world: World,
+    su_producer: SUProducerBuilding,
+) -> bool:
+    if su_producer.status != SUProducerStatus.ACTIVE:
+        return False
+
+    producer_definition = world.definitions.get_su_producer(
+        su_producer.producer_type
+    )
+    if producer_definition is None:
+        return False
+
+    required_items: dict[str, int] = {}
+
+    for unit_type, amount in su_producer.installed_units.items():
+        if amount <= 0:
+            continue
+
+        unit_definition = world.definitions.get_su_unit(unit_type)
+        if (
+            unit_definition is None
+            or unit_type not in producer_definition.allowed_unit_types
+        ):
+            return False
+
+        for item_id, required_amount in unit_definition.input_items.items():
+            required_items[item_id] = (
+                required_items.get(item_id, 0) + required_amount * amount
+            )
+
+    for item_id, amount in required_items.items():
+        if not su_producer.has_input_item(item_id, amount):
+            su_producer.status = SUProducerStatus.MISSING_INPUT
+            return False
+
+    for item_id, amount in required_items.items():
+        su_producer.remove_input_item(item_id, amount)
+
+    return True
+
+
+def process_su_producers(world: World) -> None:
+    for su_producer in world.su_producers:
+        consume_su_producer_inputs(world, su_producer)
+
+
 def _has_required_inputs(
     su_producer: SUProducerBuilding,
     input_items: dict[str, int],

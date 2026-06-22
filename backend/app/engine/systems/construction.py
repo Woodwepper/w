@@ -3,6 +3,7 @@ from typing import Any
 from app.engine.entities.machine_instance import MachineInstance
 from app.engine.entities.module_instance import ModuleInstance
 from app.engine.entities.factory_building import FactoryBuilding
+from app.engine.entities.producer_building import ProducerBuilding
 from app.engine.definitions.game_definitions import GameDefinitions
 from app.engine.core.world import World
 from app.engine.inventory.entity_stack import EntityStack
@@ -15,18 +16,14 @@ from app.engine.systems.machine_hosts import (
 
 def _has_resources(inventory, cost: dict[str, int]) -> bool:
     for item_id, amount in cost.items():
-        if inventory.get(item_id, 0) < amount:
+        if not inventory.has_normal_items(item_id, amount):
             return False
     return True
 
 
 def _consume_resources(inventory, cost: dict[str, int]) -> None:
     for item_id, amount in cost.items():
-        remaining_amount = inventory.get(item_id, 0) - amount
-        if remaining_amount <= 0:
-            inventory.pop(item_id, None)
-        else:
-            inventory[item_id] = remaining_amount
+        inventory.remove_normal_item(item_id, amount)
 
 
 def can_build_machine_from_resources(
@@ -113,6 +110,21 @@ def add_machine_to_inventory(
     )
 
 
+def create_machine_from_entity_stack(
+    stack: EntityStack | None,
+    machine_id: int,
+) -> MachineInstance | None:
+    if stack is None or stack.entity_type != "machine":
+        return None
+
+    return create_machine_instance(
+        stack.object_id,
+        machine_id,
+        level=int(stack.entity_data.get("level", 1)),
+        metadata=dict(stack.entity_data.get("metadata", {})),
+    )
+
+
 def can_install_machine_in_module(
     factory: FactoryBuilding | None,
     module: ModuleInstance | None,
@@ -153,6 +165,71 @@ def install_machine_in_module(
         return False
 
     module.add_machine(machine)
+    return True
+
+
+def install_machine_from_inventory_to_module(
+    world: World | None,
+    factory_id: int,
+    module_id: int,
+    object_id: str,
+    machine_id: int,
+    entity_data: dict | None = None,
+) -> bool:
+    if world is None:
+        return False
+
+    factory = world.get_factory(factory_id)
+    if factory is None:
+        return False
+
+    module = factory.get_module(module_id)
+    if module is None:
+        return False
+
+    stack = world.inventory.find_entity_stack(
+        object_id,
+        "machine",
+        entity_data,
+    )
+    machine = create_machine_from_entity_stack(stack, machine_id)
+    if not can_install_machine_in_module(factory, module, machine, world.definitions):
+        return False
+
+    if not world.inventory.remove_entity_stack(
+        object_id,
+        "machine",
+        amount=1,
+        entity_data=stack.entity_data,
+    ):
+        return False
+
+    module.add_machine(machine)
+    return True
+
+
+def uninstall_machine_from_module_to_inventory(
+    world: World | None,
+    factory_id: int,
+    module_id: int,
+    machine_id: int,
+) -> bool:
+    if world is None:
+        return False
+
+    factory = world.get_factory(factory_id)
+    if factory is None:
+        return False
+
+    module = factory.get_module(module_id)
+    if module is None:
+        return False
+
+    machine = module.get_machine(machine_id)
+    if machine is None or not module.remove_machine(machine_id):
+        return False
+
+    add_machine_to_inventory(world.inventory, machine)
     return True
 
 
@@ -240,3 +317,145 @@ def upgrade_machine(
     _consume_resources(inventory, upgrade_cost)
     machine.set_level(target_level)
     return True
+
+
+def can_install_machine_in_producer(
+    producer: ProducerBuilding | None,
+    machine: MachineInstance | None,
+    definitions: GameDefinitions,
+) -> bool:
+    if producer is None or machine is None:
+        return False
+
+    producer_definition = definitions.get_producer(producer.producer_type)
+    if producer_definition is None:
+        return False
+
+    return can_install_machine_on_host(
+        machine=machine,
+        definitions=definitions,
+        allowed_machine_types=producer_definition.allowed_machine_types,
+        installed_machines=producer.installed_machines,
+        slot_limit=producer.get_machine_slot_limit(definitions),
+        get_existing_machine=producer.get_machine,
+    )
+
+
+def install_machine_in_producer(
+    producer: ProducerBuilding | None,
+    machine: MachineInstance,
+    definitions: GameDefinitions,
+) -> bool:
+    if not can_install_machine_in_producer(producer, machine, definitions):
+        return False
+
+    producer.add_machine(machine)
+    return True
+
+
+def install_machine_from_inventory_to_producer(
+    world: World | None,
+    producer_id: int,
+    object_id: str,
+    machine_id: int,
+    entity_data: dict | None = None,
+) -> bool:
+    if world is None:
+        return False
+
+    producer = world.get_producer(producer_id)
+    if producer is None:
+        return False
+
+    stack = world.inventory.find_entity_stack(
+        object_id,
+        "machine",
+        entity_data,
+    )
+    machine = create_machine_from_entity_stack(stack, machine_id)
+    if not can_install_machine_in_producer(producer, machine, world.definitions):
+        return False
+
+    if not world.inventory.remove_entity_stack(
+        object_id,
+        "machine",
+        amount=1,
+        entity_data=stack.entity_data,
+    ):
+        return False
+
+    producer.add_machine(machine)
+    return True
+
+
+def build_and_install_machine_in_producer_from_resources(
+    world: World | None,
+    producer_id: int,
+    machine_type: str,
+    machine_id: int,
+    level: int = 1,
+    metadata: dict[str, Any] | None = None,
+) -> bool:
+    if world is None:
+        return False
+
+    producer = world.get_producer(producer_id)
+    if producer is None:
+        return False
+
+    proposed_machine = create_machine_instance(
+        machine_type,
+        machine_id,
+        level,
+        metadata,
+    )
+
+    if not can_install_machine_in_producer(
+        producer,
+        proposed_machine,
+        world.definitions,
+    ):
+        return False
+
+    machine = build_machine_from_resources(
+        world.inventory,
+        world.definitions,
+        machine_type,
+        machine_id,
+        level=level,
+        metadata=metadata,
+    )
+    if machine is None:
+        return False
+
+    producer.add_machine(machine)
+    return True
+
+
+def uninstall_machine_from_producer_to_inventory(
+    world: World | None,
+    producer_id: int,
+    machine_id: int,
+) -> bool:
+    if world is None:
+        return False
+
+    producer = world.get_producer(producer_id)
+    if producer is None:
+        return False
+
+    machine = producer.get_machine(machine_id)
+    if machine is None or not producer.remove_machine(machine_id):
+        return False
+
+    add_machine_to_inventory(world.inventory, machine)
+    return True
+
+
+def upgrade_producer_machine(
+    inventory,
+    definitions: GameDefinitions,
+    machine: MachineInstance,
+    target_level: int,
+) -> bool:
+    return upgrade_machine(inventory, definitions, machine, target_level)

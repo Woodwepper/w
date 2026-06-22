@@ -4,8 +4,6 @@ from app.engine.entities.power_network import PowerNetwork
 from app.engine.entities.factory_building import FactoryBuilding
 from app.engine.entities.producer_building import ProducerBuilding
 from app.engine.entities.resource_node import ResourceNode
-from app.engine.entities.su_source import SUSource
-from app.engine.entities.su_source_instance import SUSourceInstance
 from app.engine.entities.su_producer_building import SUProducerBuilding
 from app.engine.inventory.inventory import Inventory
 from app.engine.definitions.game_definitions import (
@@ -20,11 +18,13 @@ class World:
     name: str
 
     definitions: GameDefinitions = field(default_factory=create_default_definitions)
+    template_id: str | None = "default"
+    template_version: str | None = "1"
+    definitions_snapshot: dict | None = None
     simulated_time: float = 0.0
 
     inventory: Inventory = field(default_factory=Inventory)
 
-    su_sources: list[SUSourceInstance] = field(default_factory=list)
     su_producers: list[SUProducerBuilding] = field(default_factory=list)
     power_networks: list[PowerNetwork] = field(default_factory=list)
     factories: list[FactoryBuilding] = field(default_factory=list)
@@ -61,22 +61,6 @@ class World:
         if factory is None:
             return False
         self.factories.remove(factory)
-        return True
-
-    def add_su_source(self, su_source: SUSourceInstance) -> None:
-        self.su_sources.append(su_source)
-
-    def get_su_source(self, su_source_id: int) -> SUSourceInstance | None:
-        for su_source in self.su_sources:
-            if su_source.id == su_source_id:
-                return su_source
-        return None
-
-    def remove_su_source(self, su_source_id: int) -> bool:
-        su_source = self.get_su_source(su_source_id)
-        if su_source is None:
-            return False
-        self.su_sources.remove(su_source)
         return True
 
     def add_su_producer(self, su_producer: SUProducerBuilding) -> None:
@@ -145,15 +129,22 @@ class World:
 
     @classmethod
     def from_dict(cls, data: dict) -> "World":
+        definitions_snapshot = data.get("definitions_snapshot")
+        definitions = (
+            GameDefinitions.from_dict(definitions_snapshot)
+            if definitions_snapshot is not None
+            else create_default_definitions()
+        )
+
         return cls(
             id=data["id"],
             name=data["name"],
+            definitions=definitions,
+            template_id=data.get("template_id", "default"),
+            template_version=data.get("template_version", "1"),
+            definitions_snapshot=definitions_snapshot,
             simulated_time=data.get("simulated_time", 0.0),
             inventory=Inventory.from_dict(data.get("inventory", {})),
-            su_sources=[
-                _su_source_from_dict(item) if isinstance(item, dict) else item
-                for item in data.get("su_sources", [])
-            ],
             su_producers=[
                 SUProducerBuilding.from_dict(item) if isinstance(item, dict) else item
                 for item in data.get("su_producers", [])
@@ -183,9 +174,13 @@ class World:
         return {
             "id": self.id,
             "name": self.name,
+            "template_id": self.template_id,
+            "template_version": self.template_version,
+            "definitions_snapshot": self.definitions_snapshot
+            if self.definitions_snapshot is not None
+            else self.definitions.to_dict(),
             "simulated_time": self.simulated_time,
             "inventory": self.inventory.to_dict(),
-            "su_sources": [s.to_dict() for s in self.su_sources],
             "su_producers": [p.to_dict() for p in self.su_producers],
             "power_networks": [p.to_dict() for p in self.power_networks],
             "factories": [f.to_dict() for f in self.factories],
@@ -195,9 +190,3 @@ class World:
             "su_required": self.su_required,
             "su_available": self.su_available,
         }
-
-
-def _su_source_from_dict(data: dict) -> SUSourceInstance | SUSource:
-    if "source_type" in data:
-        return SUSourceInstance.from_dict(data)
-    return SUSource.from_dict(data)

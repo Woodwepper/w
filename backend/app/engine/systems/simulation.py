@@ -12,6 +12,7 @@ from app.engine.systems.power import (
 )
 from app.engine.systems.producers import process_producer
 from app.engine.systems.production import process_factory
+from app.engine.systems.su_producers import process_su_producers
 
 
 def calculate_su_produced(world: World) -> int:
@@ -100,6 +101,7 @@ def tick(world: World, seconds: float) -> None:
 
     allocate_power(world)
     update_world_su(world)
+    process_su_producers(world)
 
     for factory in world.factories:
         if factory.status == FactoryStatus.UNDERPOWERED:

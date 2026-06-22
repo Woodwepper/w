@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from app.engine.entities.machine_instance import MachineInstance
 from app.engine.core.statuses import ProducerStatus
 from app.engine.definitions.game_definitions import GameDefinitions
+from app.engine.inventory.inventory import Inventory
 
 
 @dataclass
@@ -67,7 +68,7 @@ class ProducerBuilding:
     def can_level_up(
         self,
         definitions: GameDefinitions,
-        inventory: dict[str, int],
+        inventory: Inventory,
     ) -> bool:
         producer_definition = definitions.get_producer(self.producer_type)
         if producer_definition is None:
@@ -78,7 +79,7 @@ class ProducerBuilding:
             return False
 
         for item_id, amount in next_level_definition.upgrade_cost.items():
-            if inventory.get(item_id, 0) < amount:
+            if not inventory.has_normal_items(item_id, amount):
                 return False
 
         return True
@@ -86,7 +87,7 @@ class ProducerBuilding:
     def level_up(
         self,
         definitions: GameDefinitions,
-        inventory: dict[str, int],
+        inventory: Inventory,
     ) -> bool:
         producer_definition = definitions.get_producer(self.producer_type)
         if producer_definition is None:
@@ -100,11 +101,7 @@ class ProducerBuilding:
             return False
 
         for item_id, amount in next_level_definition.upgrade_cost.items():
-            remaining_amount = inventory.get(item_id, 0) - amount
-            if remaining_amount <= 0:
-                inventory.pop(item_id, None)
-            else:
-                inventory[item_id] = remaining_amount
+            inventory.remove_normal_item(item_id, amount)
 
         self.level = next_level_definition.level
         return True

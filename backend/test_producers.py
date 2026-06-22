@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from app.api import memory_store
 from app.engine.entities.machine_instance import MachineInstance
 from app.engine.entities.power_network import PowerNetwork
-from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.su_producer_building import SUProducerBuilding
 from app.engine.entities.producer_building import ProducerBuilding
 from app.engine.core.statuses import ProducerStatus
 from app.engine.entities.resource_node import ResourceNode
@@ -26,7 +26,7 @@ def reset_memory_store() -> None:
     memory_store.next_factory_id = 1
     memory_store.next_module_id = 1
     memory_store.next_machine_id = 1
-    memory_store.next_su_source_id = 1
+    memory_store.next_su_producer_id = 1
     memory_store.next_power_network_id = 1
     memory_store.next_resource_node_id = 1
     memory_store.next_producer_id = 1
@@ -95,22 +95,32 @@ def build_drill(client: TestClient, world_id: int, producer_id: int, level: int 
 
 
 def connect_producer_power(client: TestClient, world_id: int, producer_id: int) -> None:
-    source = client.post(
-        f"/api/worlds/{world_id}/su-sources",
+    for item_id, amount in {"andesite_alloy": 8, "shaft": 4}.items():
+        client.post(
+            f"/api/worlds/{world_id}/inventory/test-add",
+            json={"item_id": item_id, "amount": amount},
+        )
+
+    su_producer = client.post(
+        f"/api/worlds/{world_id}/su-producers",
         json={
-            "source_type": "water_wheel",
-            "name": "Water Wheel",
+            "producer_type": "river_power_complex",
+            "name": "River Power",
             "x": 0,
             "y": 0,
         },
     ).json()
+    client.post(
+        f"/api/worlds/{world_id}/su-producers/{su_producer['id']}/units",
+        json={"unit_type": "water_wheel_unit", "amount": 4},
+    )
     network = client.post(
         f"/api/worlds/{world_id}/power-networks",
         json={"name": "Main Grid"},
     ).json()
     client.post(
         f"/api/worlds/{world_id}/power-networks/{network['id']}/sources",
-        json={"source_id": source["id"]},
+        json={"su_producer_id": su_producer["id"]},
     )
     client.post(
         f"/api/worlds/{world_id}/power-networks/{network['id']}/consumers",
@@ -125,13 +135,13 @@ def connect_producer_to_water_wheel(
     world: World,
     producer: ProducerBuilding,
 ) -> None:
-    world.add_su_source(
-        SUSourceInstance(
-            id=1,
-            source_type="water_wheel",
-            name="Water Wheel",
-        )
+    su_producer = SUProducerBuilding(
+        id=1,
+        name="River Power",
+        producer_type="river_power_complex",
     )
+    su_producer.add_unit("water_wheel_unit", 4)
+    world.add_su_producer(su_producer)
     network = PowerNetwork(id=1, name="Main Grid")
     network.add_source(1)
     network.add_consumer("producer", producer.id)
@@ -194,7 +204,7 @@ def test_1_api_producer_flow_with_real_machines() -> None:
     ).json()
     collected_producer = collected_state["producers"][0]
 
-    assert collected_state["inventory"]["raw_iron"] == 2
+    assert collected_state["inventory"]["normal_items"]["raw_iron"] == 2
     assert collected_producer["output_items"]["raw_iron"] == 2
 
 
@@ -362,7 +372,7 @@ def test_7_machine_slot_limit_and_level_up() -> None:
     leveled_producer = leveled_state["producers"][0]
 
     assert leveled_producer["level"] == 2
-    assert leveled_state["inventory"].get("shaft", 0) == 1
+    assert leveled_state["inventory"]["normal_items"].get("shaft", 0) == 1
     assert build_drill(client, world_id, producer["id"]).status_code == 200
 
 

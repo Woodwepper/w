@@ -20,6 +20,11 @@ class BuildInventoryMachineRequest(BaseModel):
     metadata: dict = Field(default_factory=dict)
 
 
+class InstallInventoryMachineRequest(BaseModel):
+    object_id: str
+    entity_data: dict | None = None
+
+
 class CreateFactoryRequest(BaseModel):
     name: str
     x: int = 0
@@ -65,20 +70,12 @@ class UpgradeMachineRequest(BaseModel):
     target_level: int
 
 
-class CreateSUSourceRequest(BaseModel):
-    source_type: str
-    name: str
-    x: int = 0
-    y: int = 0
-
-
 class CreatePowerNetworkRequest(BaseModel):
     name: str
 
 
 class AddNetworkSourceRequest(BaseModel):
-    source_id: int
-    source_type: str = "su_source"
+    su_producer_id: int
 
 
 class AddNetworkConsumerRequest(BaseModel):

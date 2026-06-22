@@ -14,15 +14,18 @@ def test_1_default_objects_exist() -> None:
     assert world.definitions.get_object("mechanical_press").entity_type == "machine"
 
 
-def test_2_inventory_normal_items_compatibility() -> None:
+def test_2_inventory_normal_items() -> None:
     inventory = Inventory()
-    inventory.update({"andesite_alloy": 5})
-    inventory["iron_sheet"] = 2
+    inventory.add_normal_item("andesite_alloy", 5)
+    inventory.add_normal_item("iron_sheet", 2)
 
-    assert inventory.get("andesite_alloy") == 5
-    assert dict(inventory) == {"andesite_alloy": 5, "iron_sheet": 2}
+    assert inventory.get_normal_amount("andesite_alloy") == 5
+    assert inventory.to_dict()["normal_items"] == {
+        "andesite_alloy": 5,
+        "iron_sheet": 2,
+    }
     assert inventory.remove_normal_item("andesite_alloy", 3)
-    assert inventory["andesite_alloy"] == 2
+    assert inventory.get_normal_amount("andesite_alloy") == 2
 
 
 def test_3_inventory_entity_stack_roundtrip() -> None:
@@ -45,7 +48,8 @@ def test_3_inventory_entity_stack_roundtrip() -> None:
 
 def test_4_build_machine_to_inventory_consumes_resources() -> None:
     world = World(id=1, name="Machine Inventory")
-    world.inventory.update({"andesite_alloy": 2, "iron_sheet": 1})
+    world.inventory.add_normal_item("andesite_alloy", 2)
+    world.inventory.add_normal_item("iron_sheet", 1)
 
     assert build_machine_to_inventory(
         world.inventory,
@@ -55,7 +59,7 @@ def test_4_build_machine_to_inventory_consumes_resources() -> None:
         metadata={"line": "A"},
     )
 
-    assert dict(world.inventory) == {}
+    assert world.inventory.normal_items == {}
     assert len(world.inventory.entity_items) == 1
     stack = world.inventory.entity_items[0]
     assert stack.object_id == "mechanical_press"
@@ -105,7 +109,7 @@ def test_6_world_inventory_roundtrip() -> None:
 
 TESTS = [
     ("Test 1: default objects exist", test_1_default_objects_exist),
-    ("Test 2: inventory normal compatibility", test_2_inventory_normal_items_compatibility),
+    ("Test 2: inventory normal items", test_2_inventory_normal_items),
     ("Test 3: entity stack roundtrip", test_3_inventory_entity_stack_roundtrip),
     ("Test 4: build machine to inventory", test_4_build_machine_to_inventory_consumes_resources),
     ("Test 5: add machine loses progress", test_5_add_machine_to_inventory_loses_progress),

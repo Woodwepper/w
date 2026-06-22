@@ -3,14 +3,14 @@ from app.engine.core.statuses import MachineStatus
 from app.engine.entities.machine_instance import MachineInstance
 from app.engine.entities.module_instance import ModuleInstance
 from app.engine.entities.power_network import PowerNetwork
-from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.su_producer_building import SUProducerBuilding
 from app.engine.entities.factory_building import FactoryBuilding
 from app.engine.core.statuses import FactoryStatus
 from app.engine.entities.producer_building import ProducerBuilding
 from app.engine.core.statuses import ProducerStatus
 from app.engine.entities.resource_node import ResourceNode
 from app.engine.core.world import World
-from app.engine.systems.producers import can_install_machine_in_producer
+from app.engine.systems.construction import can_install_machine_in_producer
 from app.engine.systems.simulation import tick
 
 
@@ -112,18 +112,18 @@ def connect_power(
     world: World,
     consumers: list[tuple[str, int]],
     *,
-    source_id: int = 1,
+    su_producer_id: int = 1,
     network_id: int = 1,
 ) -> PowerNetwork:
-    world.add_su_source(
-        SUSourceInstance(
-            id=source_id,
-            source_type="water_wheel",
-            name=f"Water Wheel {source_id}",
-        )
+    su_producer = SUProducerBuilding(
+        id=su_producer_id,
+        name=f"River Power {su_producer_id}",
+        producer_type="river_power_complex",
     )
+    su_producer.add_unit("water_wheel_unit", 4)
+    world.add_su_producer(su_producer)
     network = PowerNetwork(id=network_id, name=f"Network {network_id}")
-    network.add_source(source_id)
+    network.add_source(su_producer_id)
     for consumer_type, consumer_id in consumers:
         network.add_consumer(consumer_type, consumer_id)
     world.add_power_network(network)
@@ -308,28 +308,14 @@ def test_8_runtime_serialization_roundtrip() -> None:
     assert len(restored.resource_nodes) == 1
     assert len(restored.producers) == 1
     assert len(restored.producers[0].installed_machines) == 2
-    assert len(restored.su_sources) == 1
+    assert len(restored.su_producers) == 1
     assert len(restored.power_networks) == 1
-    assert "sources" in data["power_networks"][0]
-    assert "source_ids" not in data["power_networks"][0]
-    assert restored.power_networks[0].sources[0].source_type == "su_source"
-    assert restored.power_networks[0].sources[0].source_id == 1
+    assert "su_producer_ids" in data["power_networks"][0]
+    assert restored.power_networks[0].su_producer_ids[0] == 1
     assert restored.power_networks[0].consumers[0].consumer_type == "factory"
     assert "su_required" in data
     assert "su_requiered" not in data
     assert restored.factories[0].modules[0].installed_machines[0].status == MachineStatus.WORKING
-
-    legacy_network = PowerNetwork.from_dict(
-        {
-            "id": 99,
-            "name": "Legacy Network",
-            "source_ids": [7],
-            "consumers": [],
-        }
-    )
-    assert legacy_network.sources[0].source_type == "su_source"
-    assert legacy_network.sources[0].source_id == 7
-
 
 TESTS = [
     ("Test 1: factory production basica", test_1_factory_production_basic),

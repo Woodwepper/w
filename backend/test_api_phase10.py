@@ -10,7 +10,6 @@ def reset_memory_store() -> None:
     memory_store.next_factory_id = 1
     memory_store.next_module_id = 1
     memory_store.next_machine_id = 1
-    memory_store.next_su_source_id = 1
     memory_store.next_su_producer_id = 1
     memory_store.next_power_network_id = 1
     memory_store.next_resource_node_id = 1
@@ -83,6 +82,7 @@ def test_3_su_producer_powers_factory_by_api() -> None:
             "andesite_alloy": 10,
             "shaft": 4,
             "iron_sheet": 10,
+            "iron_ingot": 10,
         },
     )
 
@@ -129,8 +129,7 @@ def test_3_su_producer_powers_factory_by_api() -> None:
     client.post(
         f"/api/worlds/{world_id}/power-networks/{network['id']}/sources",
         json={
-            "source_type": "su_producer",
-            "source_id": su_producer["id"],
+            "su_producer_id": su_producer["id"],
         },
     )
     client.post(

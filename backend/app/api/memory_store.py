@@ -3,7 +3,6 @@ from fastapi import HTTPException
 from app.engine.entities.machine_instance import MachineInstance
 from app.engine.entities.module_instance import ModuleInstance
 from app.engine.entities.power_network import PowerNetwork
-from app.engine.entities.su_source_instance import SUSourceInstance
 from app.engine.entities.su_producer_building import SUProducerBuilding
 from app.engine.entities.factory_building import FactoryBuilding
 from app.engine.entities.producer_building import ProducerBuilding
@@ -17,7 +16,6 @@ next_world_id = 1
 next_factory_id = 1
 next_module_id = 1
 next_machine_id = 1
-next_su_source_id = 1
 next_su_producer_id = 1
 next_power_network_id = 1
 next_resource_node_id = 1
@@ -53,14 +51,6 @@ def allocate_machine_id() -> int:
 
     new_id = next_machine_id
     next_machine_id += 1
-    return new_id
-
-
-def allocate_su_source_id() -> int:
-    global next_su_source_id
-
-    new_id = next_su_source_id
-    next_su_source_id += 1
     return new_id
 
 
@@ -140,16 +130,6 @@ def get_machine_or_404(
     if machine is None:
         raise HTTPException(status_code=404, detail="Machine not found")
     return machine
-
-
-def get_su_source_or_404(
-    world: World,
-    source_id: int,
-) -> SUSourceInstance:
-    su_source = world.get_su_source(source_id)
-    if su_source is None:
-        raise HTTPException(status_code=404, detail="SU source not found")
-    return su_source
 
 
 def get_su_producer_or_404(

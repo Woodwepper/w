@@ -8,7 +8,6 @@ from app.engine.definitions.producer_definition import ProducerDefinition
 from app.engine.definitions.recipe_definition import Recipe
 from app.engine.definitions.resource_node_definition import ResourceNodeDefinition
 from app.engine.definitions.su_producer_definition import SUProducerDefinition
-from app.engine.definitions.su_source_definition import SUSourceDefinition
 from app.engine.definitions.su_unit_definition import SUUnitDefinition
 
 
@@ -18,7 +17,6 @@ class GameDefinitions:
     objects: dict[str, ObjectDefinition] = field(default_factory=dict)
     modules: dict[str, ModuleDefinition] = field(default_factory=dict)
     recipes: dict[str, Recipe] = field(default_factory=dict)
-    su_sources: dict[str, SUSourceDefinition] = field(default_factory=dict)
     su_units: dict[str, SUUnitDefinition] = field(default_factory=dict)
     su_producers: dict[str, SUProducerDefinition] = field(default_factory=dict)
     factory_levels: dict[int, FactoryLevelDefinition] = field(default_factory=dict)
@@ -36,9 +34,6 @@ class GameDefinitions:
 
     def get_recipe(self, recipe_id: str) -> Recipe | None:
         return self.recipes.get(recipe_id)
-
-    def get_su_source(self, source_type: str) -> SUSourceDefinition | None:
-        return self.su_sources.get(source_type)
 
     def get_su_unit(self, unit_type: str) -> SUUnitDefinition | None:
         return self.su_units.get(unit_type)
@@ -75,10 +70,6 @@ class GameDefinitions:
             "recipes": {
                 recipe_id: recipe.to_dict()
                 for recipe_id, recipe in self.recipes.items()
-            },
-            "su_sources": {
-                source_id: su_source.to_dict()
-                for source_id, su_source in self.su_sources.items()
             },
             "su_units": {
                 unit_id: su_unit.to_dict()
@@ -120,10 +111,6 @@ class GameDefinitions:
             recipes={
                 recipe_id: Recipe.from_dict(recipe)
                 for recipe_id, recipe in data.get("recipes", {}).items()
-            },
-            su_sources={
-                source_id: SUSourceDefinition.from_dict(su_source)
-                for source_id, su_source in data.get("su_sources", {}).items()
             },
             su_units={
                 unit_id: SUUnitDefinition.from_dict(su_unit)

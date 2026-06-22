@@ -1,8 +1,5 @@
-from typing import Any
-
 from app.engine.entities.machine_instance import MachineInstance
-from app.engine.entities.power_network import PowerNetwork, PowerSourceRef
-from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.power_network import PowerNetwork
 from app.engine.entities.producer_building import ProducerBuilding
 from app.engine.core.statuses import ProducerStatus
 from app.engine.entities.factory_building import FactoryBuilding
@@ -12,27 +9,6 @@ from app.engine.systems.producers import (
     calculate_producer_su_required as calculate_power_producer_su_required,
 )
 from app.engine.systems.su_producers import calculate_su_producer_output
-
-
-def calculate_su_source_output(
-    world: World,
-    source: SUSourceInstance | Any,
-) -> int:
-    if hasattr(source, "enabled") and not source.enabled:
-        return 0
-
-    if getattr(source, "status", "active") != "active":
-        return 0
-
-    source_type = getattr(source, "source_type", None)
-    if source_type is None:
-        return getattr(source, "su_output", 0)
-
-    source_definition = world.definitions.get_su_source(source_type)
-    if source_definition is None:
-        return 0
-
-    return source_definition.su_output
 
 
 def calculate_machine_su_required(
@@ -68,21 +44,12 @@ def calculate_producer_su_required(
 
 def calculate_power_source_output(
     world: World,
-    source_ref: PowerSourceRef,
+    su_producer_id: int,
 ) -> int:
-    if source_ref.source_type == "su_source":
-        source = world.get_su_source(source_ref.source_id)
-        if source is None:
-            return 0
-        return calculate_su_source_output(world, source)
-
-    if source_ref.source_type == "su_producer":
-        su_producer = world.get_su_producer(source_ref.source_id)
-        if su_producer is None:
-            return 0
-        return calculate_su_producer_output(world, su_producer)
-
-    return 0
+    su_producer = world.get_su_producer(su_producer_id)
+    if su_producer is None:
+        return 0
+    return calculate_su_producer_output(world, su_producer)
 
 
 def calculate_network_su_output(
@@ -91,8 +58,8 @@ def calculate_network_su_output(
 ) -> int:
     total = 0
 
-    for source_ref in network.sources:
-        total += calculate_power_source_output(world, source_ref)
+    for su_producer_id in network.su_producer_ids:
+        total += calculate_power_source_output(world, su_producer_id)
 
     return total
 

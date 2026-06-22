@@ -1,12 +1,10 @@
-from collections.abc import MutableMapping
 from dataclasses import dataclass, field
-from typing import Iterator
 
 from app.engine.inventory.entity_stack import EntityStack
 
 
 @dataclass
-class Inventory(MutableMapping[str, int]):
+class Inventory:
     normal_items: dict[str, int] = field(default_factory=dict)
     entity_items: list[EntityStack] = field(default_factory=list)
 
@@ -50,40 +48,53 @@ class Inventory(MutableMapping[str, int]):
         amount: int = 1,
         entity_data: dict | None = None,
     ) -> bool:
+        stack = self.find_entity_stack(object_id, entity_type, entity_data)
+        if stack is None:
+            return False
+
         if amount <= 0:
             return False
 
-        target_key = (object_id, entity_type, _freeze_entity_data(entity_data or {}))
-        for stack in self.entity_items:
-            if _entity_stack_key(stack) != target_key:
-                continue
-            if stack.amount < amount:
-                return False
-            stack.amount -= amount
-            if stack.amount <= 0:
-                self.entity_items.remove(stack)
-            return True
+        if stack.amount < amount:
+            return False
 
-        return False
+        stack.amount -= amount
+        if stack.amount <= 0:
+            self.entity_items.remove(stack)
+        return True
+
+    def find_entity_stack(
+        self,
+        object_id: str,
+        entity_type: str,
+        entity_data: dict | None = None,
+    ) -> EntityStack | None:
+        target_data = None
+        if entity_data is not None:
+            target_data = _freeze_entity_data(entity_data)
+
+        for stack in self.entity_items:
+            if stack.object_id != object_id or stack.entity_type != entity_type:
+                continue
+            if target_data is not None and _freeze_entity_data(stack.entity_data) != target_data:
+                continue
+            return stack
+
+        return None
 
     def to_dict(self) -> dict:
-        data = {
+        return {
             "normal_items": dict(self.normal_items),
             "entity_items": [
                 stack.to_dict()
                 for stack in self.entity_items
             ],
         }
-        data.update(self.normal_items)
-        return data
 
     @classmethod
     def from_dict(cls, data) -> "Inventory":
         if isinstance(data, Inventory):
             return data
-
-        if "normal_items" not in data and "entity_items" not in data:
-            return cls(normal_items=dict(data))
 
         return cls(
             normal_items=dict(data.get("normal_items", {})),
@@ -92,24 +103,6 @@ class Inventory(MutableMapping[str, int]):
                 for item in data.get("entity_items", [])
             ],
         )
-
-    def __getitem__(self, key: str) -> int:
-        return self.normal_items[key]
-
-    def __setitem__(self, key: str, value: int) -> None:
-        if value <= 0:
-            self.normal_items.pop(key, None)
-        else:
-            self.normal_items[key] = value
-
-    def __delitem__(self, key: str) -> None:
-        del self.normal_items[key]
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self.normal_items)
-
-    def __len__(self) -> int:
-        return len(self.normal_items)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Inventory):
@@ -124,8 +117,6 @@ class Inventory(MutableMapping[str, int]):
                     for stack in other.entity_items
                 ]
             )
-        if isinstance(other, dict):
-            return self.normal_items == other
         return False
 
 

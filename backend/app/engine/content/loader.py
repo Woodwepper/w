@@ -10,7 +10,6 @@ from app.engine.definitions.producer_definition import ProducerDefinition
 from app.engine.definitions.recipe_definition import Recipe
 from app.engine.definitions.resource_node_definition import ResourceNodeDefinition
 from app.engine.definitions.su_producer_definition import SUProducerDefinition
-from app.engine.definitions.su_source_definition import SUSourceDefinition
 from app.engine.definitions.su_unit_definition import SUUnitDefinition
 
 
@@ -23,7 +22,6 @@ REQUIRED_TEMPLATE_FILES = {
     "objects": "objects.json",
     "modules": "modules.json",
     "recipes": "recipes.json",
-    "su_sources": "su_sources.json",
     "su_units": "su_units.json",
     "su_producers": "su_producers.json",
     "factory_levels": "factory_levels.json",
@@ -63,10 +61,6 @@ def load_game_definitions_from_path(path: str | Path):
             recipe_id: Recipe.from_dict(data)
             for recipe_id, data in raw_data["recipes"].items()
         },
-        su_sources={
-            source_id: SUSourceDefinition.from_dict(data)
-            for source_id, data in raw_data["su_sources"].items()
-        },
         su_units={
             unit_id: SUUnitDefinition.from_dict(data)
             for unit_id, data in raw_data["su_units"].items()
@@ -98,12 +92,12 @@ def validate_game_definitions(definitions) -> None:
     _validate_mapping_ids("object", definitions.objects)
     _validate_mapping_ids("module", definitions.modules)
     _validate_mapping_ids("recipe", definitions.recipes)
-    _validate_mapping_ids("su_source", definitions.su_sources)
     _validate_mapping_ids("su_unit", definitions.su_units)
     _validate_mapping_ids("su_producer", definitions.su_producers)
     _validate_mapping_ids("resource_node", definitions.resource_nodes)
     _validate_mapping_ids("producer", definitions.producers)
     _validate_factory_levels(definitions.factory_levels)
+    _validate_object_definitions(definitions)
 
     for recipe in definitions.recipes.values():
         for machine_id in recipe.required_machines:
@@ -306,6 +300,65 @@ def _validate_su_producer_levels(
         if level_definition.unit_slots <= 0:
             raise DefinitionLoadError(
                 f"SU producer {producer_id} level {level} must define positive unit_slots"
+            )
+
+
+def _validate_object_definitions(definitions) -> None:
+    supported_entity_types = {
+        "machine",
+        "producer",
+        "su_producer",
+        "su_unit",
+    }
+
+    for object_id, object_definition in definitions.objects.items():
+        if object_definition.stack_kind == "normal":
+            if object_definition.entity_type is not None:
+                raise DefinitionLoadError(
+                    f"Object {object_id} is normal but declares entity_type "
+                    f"{object_definition.entity_type}"
+                )
+            continue
+
+        if object_definition.stack_kind != "entity":
+            raise DefinitionLoadError(
+                f"Object {object_id} has unsupported stack_kind "
+                f"{object_definition.stack_kind}"
+            )
+
+        entity_type = object_definition.entity_type
+        if entity_type is None:
+            raise DefinitionLoadError(
+                f"Object {object_id} is entity but has no entity_type"
+            )
+        if entity_type not in supported_entity_types:
+            raise DefinitionLoadError(
+                f"Object {object_id} declares unsupported entity_type {entity_type}"
+            )
+
+        if entity_type == "machine":
+            _require_key(
+                definitions.machines,
+                object_id,
+                f"Object {object_id} declares entity_type machine but no MachineDefinition exists",
+            )
+        elif entity_type == "producer":
+            _require_key(
+                definitions.producers,
+                object_id,
+                f"Object {object_id} declares entity_type producer but no ProducerDefinition exists",
+            )
+        elif entity_type == "su_producer":
+            _require_key(
+                definitions.su_producers,
+                object_id,
+                f"Object {object_id} declares entity_type su_producer but no SUProducerDefinition exists",
+            )
+        elif entity_type == "su_unit":
+            _require_key(
+                definitions.su_units,
+                object_id,
+                f"Object {object_id} declares entity_type su_unit but no SUUnitDefinition exists",
             )
 
 

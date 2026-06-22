@@ -68,7 +68,7 @@ def connect_power(
     consumers: list[tuple[str, int]],
 ) -> PowerNetwork:
     network = PowerNetwork(id=1, name="New Grid")
-    network.add_source(1, "su_producer")
+    network.add_source(1)
     for consumer_type, consumer_id in consumers:
         network.add_consumer(consumer_type, consumer_id)
     world.add_power_network(network)
@@ -151,7 +151,7 @@ def test_6_su_producer_roundtrip() -> None:
 
     assert len(restored.su_producers) == 1
     assert restored.su_producers[0].get_unit_amount("water_wheel_unit") == 4
-    assert restored.power_networks[0].sources[0].source_type == "su_producer"
+    assert restored.power_networks[0].su_producer_ids[0] == 1
 
 
 TESTS = [

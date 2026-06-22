@@ -19,40 +19,40 @@ from app.api.schemas import (
     CreatePowerNetworkRequest,
     CreateProducerRequest,
     CreateResourceNodeRequest,
-    CreateSUSourceRequest,
     CreateSUProducerRequest,
     CreateWorldRequest,
+    InstallInventoryMachineRequest,
     SetModuleRecipeRequest,
     TickRequest,
     UpdateFactoryRequest,
     UpgradeMachineRequest,
 )
 from app.engine.systems.construction import (
+    build_and_install_machine_in_producer_from_resources,
     build_and_install_machine_from_resources,
     build_machine_to_inventory,
     can_build_machine_from_resources,
+    can_install_machine_in_producer,
+    install_machine_from_inventory_to_module,
+    install_machine_from_inventory_to_producer,
+    uninstall_machine_from_module_to_inventory,
+    uninstall_machine_from_producer_to_inventory,
     upgrade_machine,
+    upgrade_producer_machine,
 )
 from app.engine.entities.machine_instance import MachineInstance
 from app.engine.entities.module_instance import ModuleInstance
 from app.engine.entities.power_network import PowerNetwork, PowerConsumerRef
-from app.engine.entities.su_source_instance import SUSourceInstance
 from app.engine.entities.su_producer_building import SUProducerBuilding
 from app.engine.entities.factory_building import FactoryBuilding
 from app.engine.entities.producer_building import ProducerBuilding
 from app.engine.entities.resource_node import ResourceNode
-from app.engine.systems.producers import (
-    build_and_install_machine_in_producer_from_resources,
-    can_install_machine_in_producer,
-    upgrade_producer_machine,
-)
 from app.engine.core.world import World
 from app.engine.systems.simulation import tick
 
 
 router = APIRouter(prefix="/api", tags=["Factory Lab API V2"])
 SUPPORTED_POWER_CONSUMER_TYPES = {"factory", "producer"}
-SUPPORTED_POWER_SOURCE_TYPES = {"su_source", "su_producer"}
 
 
 def bad_request(message: str) -> None:
@@ -112,11 +112,6 @@ def validate_machine_allowed_in_module(
 
     if machine_type not in module_definition.allowed_machine_types:
         bad_request("Machine type is not compatible with this module")
-
-
-def validate_su_source_type(world: World, source_type: str) -> None:
-    if world.definitions.get_su_source(source_type) is None:
-        bad_request("source_type does not exist")
 
 
 def validate_su_producer_type(world: World, producer_type: str) -> None:
@@ -194,18 +189,9 @@ def validate_power_consumer_type(consumer_type: str) -> None:
 
 def validate_power_source_exists(
     world: World,
-    source_type: str,
-    source_id: int,
+    su_producer_id: int,
 ) -> None:
-    if source_type not in SUPPORTED_POWER_SOURCE_TYPES:
-        bad_request("source_type is not supported")
-
-    if source_type == "su_source":
-        memory_store.get_su_source_or_404(world, source_id)
-        return
-
-    if source_type == "su_producer":
-        memory_store.get_su_producer_or_404(world, source_id)
+    memory_store.get_su_producer_or_404(world, su_producer_id)
 
 
 def validate_power_consumer_exists(
@@ -238,7 +224,6 @@ def get_world_counts(world: World) -> dict:
     return {
         "factories": len(world.factories),
         "producers": len(world.producers),
-        "su_sources": len(world.su_sources),
         "su_producers": len(world.su_producers),
         "resource_nodes": len(world.resource_nodes),
         "power_networks": len(world.power_networks),
@@ -359,16 +344,11 @@ def get_power_network_detail_payload(world: World, network: PowerNetwork) -> dic
     payload["resolved_sources"] = []
     payload["resolved_consumers"] = []
 
-    for source in network.sources:
-        if source.source_type == "su_source":
-            entity = world.get_su_source(source.source_id)
-        elif source.source_type == "su_producer":
-            entity = world.get_su_producer(source.source_id)
-        else:
-            entity = None
+    for su_producer_id in network.su_producer_ids:
+        entity = world.get_su_producer(su_producer_id)
         payload["resolved_sources"].append(
             {
-                "ref": source.to_dict(),
+                "su_producer_id": su_producer_id,
                 "entity": entity.to_dict() if entity is not None else None,
             }
         )
@@ -449,10 +429,6 @@ def get_world_map(world_id: int):
             + [
                 summarize_positioned_entity("producer", producer)
                 for producer in world.producers
-            ]
-            + [
-                summarize_positioned_entity("su_source", source)
-                for source in world.su_sources
             ]
             + [
                 summarize_positioned_entity("su_producer", su_producer)
@@ -565,17 +541,6 @@ def list_world_recipes(world_id: int):
         "recipes": [
             recipe.to_dict()
             for recipe in world.definitions.recipes.values()
-        ]
-    }
-
-
-@router.get("/worlds/{world_id}/catalog/su-sources")
-def list_world_su_sources(world_id: int):
-    world = memory_store.get_world_or_404(world_id)
-    return {
-        "su_sources": [
-            asdict(su_source)
-            for su_source in world.definitions.su_sources.values()
         ]
     }
 
@@ -816,6 +781,29 @@ def build_install_producer_machine(
     return producer.to_dict()
 
 
+@router.post("/worlds/{world_id}/producers/{producer_id}/machines/install-from-inventory")
+def install_inventory_machine_in_producer(
+    world_id: int,
+    producer_id: int,
+    request: InstallInventoryMachineRequest,
+):
+    world = memory_store.get_world_or_404(world_id)
+    memory_store.get_producer_or_404(world, producer_id)
+    validate_machine_type(world, request.object_id)
+
+    machine_id = memory_store.allocate_machine_id()
+    if not install_machine_from_inventory_to_producer(
+        world,
+        producer_id,
+        request.object_id,
+        machine_id,
+        entity_data=request.entity_data,
+    ):
+        bad_request("Could not install machine from inventory")
+
+    return world.to_dict()
+
+
 @router.patch("/worlds/{world_id}/producers/{producer_id}/machines/{machine_id}/upgrade")
 def upgrade_producer_machine_endpoint(
     world_id: int,
@@ -848,8 +836,9 @@ def delete_producer_machine(
     producer = memory_store.get_producer_or_404(world, producer_id)
     memory_store.get_producer_machine_or_404(producer, machine_id)
 
-    producer.remove_machine(machine_id)
-    return producer.to_dict()
+    if not uninstall_machine_from_producer_to_inventory(world, producer_id, machine_id):
+        bad_request("Could not uninstall machine")
+    return world.to_dict()
 
 
 @router.delete("/worlds/{world_id}/producers/{producer_id}")
@@ -968,6 +957,9 @@ def add_factory_input(
     world = memory_store.get_world_or_404(world_id)
     factory = memory_store.get_factory_or_404(world, factory_id)
     validate_positive_amount(request.amount)
+
+    if not world.inventory.remove_normal_item(request.item_id, request.amount):
+        bad_request("Not enough items in world inventory")
 
     factory.add_input_item(request.item_id, request.amount)
     return factory.to_dict()
@@ -1122,6 +1114,34 @@ def build_install_machine(
     return factory.to_dict()
 
 
+@router.post(
+    "/worlds/{world_id}/factories/{factory_id}/modules/{module_id}/machines/install-from-inventory"
+)
+def install_inventory_machine_in_module(
+    world_id: int,
+    factory_id: int,
+    module_id: int,
+    request: InstallInventoryMachineRequest,
+):
+    world = memory_store.get_world_or_404(world_id)
+    factory = memory_store.get_factory_or_404(world, factory_id)
+    memory_store.get_module_or_404(factory, module_id)
+    validate_machine_type(world, request.object_id)
+
+    machine_id = memory_store.allocate_machine_id()
+    if not install_machine_from_inventory_to_module(
+        world,
+        factory_id,
+        module_id,
+        request.object_id,
+        machine_id,
+        entity_data=request.entity_data,
+    ):
+        bad_request("Could not install machine from inventory")
+
+    return world.to_dict()
+
+
 @router.patch(
     "/worlds/{world_id}/factories/{factory_id}/modules/{module_id}/machines/{machine_id}/upgrade"
 )
@@ -1162,53 +1182,13 @@ def delete_module_machine(
     module = memory_store.get_module_or_404(factory, module_id)
     memory_store.get_machine_or_404(module, machine_id)
 
-    module.remove_machine(machine_id)
-    return factory.to_dict()
-
-
-@router.post("/worlds/{world_id}/su-sources")
-def create_su_source(
-    world_id: int,
-    request: CreateSUSourceRequest,
-):
-    world = memory_store.get_world_or_404(world_id)
-    validate_su_source_type(world, request.source_type)
-
-    # Temporary testing path: SU source build costs from SUSourceDefinition
-    # will be charged in a future API phase.
-    su_source = SUSourceInstance(
-        id=memory_store.allocate_su_source_id(),
-        source_type=request.source_type,
-        name=request.name,
-        x=request.x,
-        y=request.y,
-    )
-    world.add_su_source(su_source)
-    return su_source.to_dict()
-
-
-@router.get("/worlds/{world_id}/su-sources/{source_id}")
-def get_su_source(
-    world_id: int,
-    source_id: int,
-):
-    world = memory_store.get_world_or_404(world_id)
-    su_source = memory_store.get_su_source_or_404(world, source_id)
-    return su_source.to_dict()
-
-
-@router.delete("/worlds/{world_id}/su-sources/{source_id}")
-def delete_su_source(
-    world_id: int,
-    source_id: int,
-):
-    world = memory_store.get_world_or_404(world_id)
-    memory_store.get_su_source_or_404(world, source_id)
-
-    world.remove_su_source(source_id)
-    for network in world.power_networks:
-        network.remove_source(source_id)
-
+    if not uninstall_machine_from_module_to_inventory(
+        world,
+        factory_id,
+        module_id,
+        machine_id,
+    ):
+        bad_request("Could not uninstall machine")
     return world.to_dict()
 
 
@@ -1264,7 +1244,7 @@ def delete_su_producer(
 
     world.remove_su_producer(su_producer_id)
     for network in world.power_networks:
-        network.remove_source(su_producer_id, "su_producer")
+        network.remove_source(su_producer_id)
 
     return world.to_dict()
 
@@ -1309,7 +1289,7 @@ def add_su_producer_unit(
         for item_id, amount in unit_definition.build_cost.items()
     }
     for item_id, amount in total_cost.items():
-        if world.inventory.get(item_id, 0) < amount:
+        if not world.inventory.has_normal_items(item_id, amount):
             bad_request("Not enough resources to build SU unit")
 
     for item_id, amount in total_cost.items():
@@ -1344,6 +1324,9 @@ def add_su_producer_input(
     world = memory_store.get_world_or_404(world_id)
     su_producer = memory_store.get_su_producer_or_404(world, su_producer_id)
     validate_positive_amount(request.amount)
+
+    if not world.inventory.remove_normal_item(request.item_id, request.amount):
+        bad_request("Not enough items in world inventory")
 
     su_producer.add_input_item(request.item_id, request.amount)
     return su_producer.to_dict()
@@ -1403,26 +1386,22 @@ def add_power_network_source(
 ):
     world = memory_store.get_world_or_404(world_id)
     power_network = memory_store.get_power_network_or_404(world, network_id)
-    validate_power_source_exists(world, request.source_type, request.source_id)
+    validate_power_source_exists(world, request.su_producer_id)
 
-    power_network.add_source(request.source_id, request.source_type)
+    power_network.add_source(request.su_producer_id)
     return power_network.to_dict()
 
 
-@router.delete("/worlds/{world_id}/power-networks/{network_id}/sources/{source_id}")
+@router.delete("/worlds/{world_id}/power-networks/{network_id}/sources/{su_producer_id}")
 def remove_power_network_source(
     world_id: int,
     network_id: int,
-    source_id: int,
+    su_producer_id: int,
 ):
     world = memory_store.get_world_or_404(world_id)
     power_network = memory_store.get_power_network_or_404(world, network_id)
 
-    removed = power_network.remove_source(source_id)
-    if not removed:
-        removed = power_network.remove_source(source_id, "su_producer")
-
-    if not removed:
+    if not power_network.remove_source(su_producer_id):
         raise HTTPException(status_code=404, detail="Power network source not found")
 
     return power_network.to_dict()

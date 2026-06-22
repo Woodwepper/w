@@ -2,7 +2,7 @@ from app.engine.systems.construction import build_and_install_machine_from_resou
 from app.engine.entities.machine_instance import MachineInstance
 from app.engine.entities.module_instance import ModuleInstance
 from app.engine.entities.power_network import PowerNetwork
-from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.su_producer_building import SUProducerBuilding
 from app.engine.entities.factory_building import FactoryBuilding
 from app.engine.core.statuses import FactoryStatus
 from app.engine.core.statuses import MachineStatus
@@ -84,22 +84,22 @@ def connect_factory_to_water_wheel(
     world: World,
     factory: FactoryBuilding,
     *,
-    source_id: int = 1,
+    su_producer_id: int = 1,
     network_id: int = 1,
 ) -> None:
-    if world.get_su_source(source_id) is None:
-        world.add_su_source(
-            SUSourceInstance(
-                id=source_id,
-                source_type="water_wheel",
-                name="Water Wheel",
-            )
+    if world.get_su_producer(su_producer_id) is None:
+        su_producer = SUProducerBuilding(
+            id=su_producer_id,
+            name="River Power",
+            producer_type="river_power_complex",
         )
+        su_producer.add_unit("water_wheel_unit", 4)
+        world.add_su_producer(su_producer)
 
     network = world.get_power_network(network_id)
     if network is None:
         network = PowerNetwork(id=network_id, name="Main Network")
-        network.add_source(source_id)
+        network.add_source(su_producer_id)
         world.add_power_network(network)
 
     network.add_consumer("factory", factory.id)
@@ -112,7 +112,7 @@ def test_1_world_definitions() -> None:
     assert world.definitions.get_machine("mechanical_press") is not None
     assert world.definitions.get_module("pressing_line") is not None
     assert world.definitions.get_recipe("press_iron_sheet") is not None
-    assert world.definitions.get_su_source("water_wheel") is not None
+    assert world.definitions.get_su_producer("river_power_complex") is not None
     assert world.definitions.get_factory_level(1) is not None
 
 
@@ -126,14 +126,16 @@ def test_2_factory_level_limits() -> None:
 
 def test_3_build_machine_from_resources() -> None:
     world = create_world()
-    world.inventory.update({"andesite_alloy": 5, "iron_sheet": 3})
+    world.inventory.add_normal_item("andesite_alloy", 5)
+    world.inventory.add_normal_item("iron_sheet", 3)
     factory = FactoryBuilding(id=1, name="Ironworks")
     module = ModuleInstance(id=1, module_type="pressing_line")
 
     assert factory.add_module(module, world.definitions)
     world.add_factory(factory)
 
-    before_inventory = dict(world.inventory)
+    before_andesite = world.inventory.get_normal_amount("andesite_alloy")
+    before_iron_sheet = world.inventory.get_normal_amount("iron_sheet")
     installed = build_and_install_machine_from_resources(
         world,
         factory.id,
@@ -143,14 +145,15 @@ def test_3_build_machine_from_resources() -> None:
     )
 
     assert installed
-    assert world.inventory["andesite_alloy"] == before_inventory["andesite_alloy"] - 2
-    assert world.inventory["iron_sheet"] == before_inventory["iron_sheet"] - 1
+    assert world.inventory.get_normal_amount("andesite_alloy") == before_andesite - 2
+    assert world.inventory.get_normal_amount("iron_sheet") == before_iron_sheet - 1
     assert len(module.installed_machines) == 1
 
 
 def test_4_machine_slot_limit() -> None:
     world = create_world()
-    world.inventory.update({"andesite_alloy": 10, "iron_sheet": 10})
+    world.inventory.add_normal_item("andesite_alloy", 10)
+    world.inventory.add_normal_item("iron_sheet", 10)
     factory = FactoryBuilding(id=1, name="Ironworks", level=1)
     module = ModuleInstance(id=1, module_type="pressing_line")
 

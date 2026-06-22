@@ -194,12 +194,58 @@ def test_flow_e_save_load_keeps_definitions_and_continues() -> None:
     assert calculate_machine_su_required(restored, machine) == 1024
 
 
+def test_flow_f_raw_iron_to_iron_sheet_content_chain() -> None:
+    world = World(id=1, name="Iron Chain")
+    add_items(
+        world,
+        {
+            "andesite_alloy": 20,
+            "iron_sheet": 6,
+            "shaft": 4,
+            "brick": 4,
+            "copper_sheet": 1,
+            "cogwheel": 2,
+        },
+    )
+
+    factory = FactoryBuilding(id=1, name="Ironworks", level=2)
+    crushing = ModuleInstance(id=1, module_type="crushing_line", active_recipe="crush_raw_iron")
+    smelting = ModuleInstance(id=2, module_type="smelting_line", active_recipe="smelt_crushed_iron")
+    pressing = ModuleInstance(id=3, module_type="pressing_line", active_recipe="press_iron_sheet")
+    assert factory.add_module(crushing, world.definitions)
+    assert factory.add_module(smelting, world.definitions)
+    assert factory.add_module(pressing, world.definitions)
+    world.add_factory(factory)
+
+    assert build_machine_to_inventory(world.inventory, world.definitions, "crushing_wheel")
+    assert build_machine_to_inventory(world.inventory, world.definitions, "mechanical_smelter")
+    assert build_machine_to_inventory(world.inventory, world.definitions, "mechanical_press")
+    assert install_machine_from_inventory_to_module(world, 1, 1, "crushing_wheel", 1)
+    assert install_machine_from_inventory_to_module(world, 1, 2, "mechanical_smelter", 2)
+    assert install_machine_from_inventory_to_module(world, 1, 3, "mechanical_press", 3)
+
+    factory.add_input_item("raw_iron", 1)
+    connect(world, [("factory", factory.id)])
+    world.su_producers[0].add_unit("water_wheel_unit", 2)
+
+    tick(world, 5)
+    assert factory.remove_output_item("crushed_raw_iron", 1)
+    factory.add_input_item("crushed_raw_iron", 1)
+    tick(world, 5)
+    assert factory.remove_output_item("iron_ingot", 1)
+    factory.add_input_item("iron_ingot", 1)
+    tick(world, 5)
+
+    assert factory.get_output_amount("iron_sheet") == 1
+
+
 TESTS = [
     ("Flow A: factory con SUProducer", test_flow_a_factory_with_su_producer_and_inventory_inputs),
     ("Flow B: producer con SUProducer", test_flow_b_resource_producer_with_su_producer),
     ("Flow C: EntityStack instala/desinstala", test_flow_c_entity_stack_install_uninstall),
     ("Flow D: steam consume input", test_flow_d_steam_su_producer_consumes_input_once_per_tick),
     ("Flow E: save/load", test_flow_e_save_load_keeps_definitions_and_continues),
+    ("Flow F: raw iron a iron sheet", test_flow_f_raw_iron_to_iron_sheet_content_chain),
 ]
 
 

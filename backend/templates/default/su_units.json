@@ -1,41 +1,4 @@
 {
-  "water_wheel_unit": {
-    "id": "water_wheel_unit",
-    "name": "Water Wheel Unit",
-    "su_output": 1024,
-    "input_items": {},
-    "build_cost": {
-      "andesite_alloy": 2,
-      "shaft": 1
-    },
-    "icon": "water_wheel",
-    "visual_key": "water_wheel_unit"
-  },
-  "gearbox_unit": {
-    "id": "gearbox_unit",
-    "name": "Gearbox Unit",
-    "su_output": 0,
-    "input_items": {},
-    "build_cost": {
-      "andesite_alloy": 2,
-      "cogwheel": 1
-    },
-    "icon": "gearbox",
-    "visual_key": "gearbox_unit"
-  },
-  "steam_engine_unit": {
-    "id": "steam_engine_unit",
-    "name": "Steam Engine Unit",
-    "su_output": 4096,
-    "input_items": {
-      "coal": 1
-    },
-    "build_cost": {
-      "andesite_alloy": 4,
-      "iron_sheet": 4,
-      "machine_parts": 1
-    },
-    "icon": "steam",
-    "visual_key": "steam_engine_unit"
-  }
+  "water_wheel_unit": {"id": "water_wheel_unit", "name": "Water Wheel Unit", "su_output": 1024, "input_items": {}, "build_cost": {"andesite_alloy": 2, "shaft": 1}, "icon": "water_wheel", "visual_key": "water_wheel_unit"},
+  "steam_engine_unit": {"id": "steam_engine_unit", "name": "Steam Engine Unit", "su_output": 4096, "input_items": {"coal": 1}, "build_cost": {"andesite_alloy": 4, "iron_sheet": 4, "sturdy_sheet": 1}, "icon": "steam", "visual_key": "steam_engine_unit"}
 }

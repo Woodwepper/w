@@ -4,6 +4,7 @@ from app.engine.entities.machine_instance import MachineInstance
 from app.engine.entities.module_instance import ModuleInstance
 from app.engine.entities.power_network import PowerNetwork
 from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.su_producer_building import SUProducerBuilding
 from app.engine.entities.factory_building import FactoryBuilding
 from app.engine.entities.producer_building import ProducerBuilding
 from app.engine.entities.resource_node import ResourceNode
@@ -17,6 +18,7 @@ next_factory_id = 1
 next_module_id = 1
 next_machine_id = 1
 next_su_source_id = 1
+next_su_producer_id = 1
 next_power_network_id = 1
 next_resource_node_id = 1
 next_producer_id = 1
@@ -59,6 +61,14 @@ def allocate_su_source_id() -> int:
 
     new_id = next_su_source_id
     next_su_source_id += 1
+    return new_id
+
+
+def allocate_su_producer_id() -> int:
+    global next_su_producer_id
+
+    new_id = next_su_producer_id
+    next_su_producer_id += 1
     return new_id
 
 
@@ -140,6 +150,16 @@ def get_su_source_or_404(
     if su_source is None:
         raise HTTPException(status_code=404, detail="SU source not found")
     return su_source
+
+
+def get_su_producer_or_404(
+    world: World,
+    su_producer_id: int,
+) -> SUProducerBuilding:
+    su_producer = world.get_su_producer(su_producer_id)
+    if su_producer is None:
+        raise HTTPException(status_code=404, detail="SU producer not found")
+    return su_producer
 
 
 def get_power_network_or_404(

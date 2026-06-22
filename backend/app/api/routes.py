@@ -8,6 +8,9 @@ from app.api.schemas import (
     AddInventoryItemRequest,
     AddNetworkConsumerRequest,
     AddNetworkSourceRequest,
+    AddSUProducerInputRequest,
+    AddSUProducerUnitRequest,
+    BuildInventoryMachineRequest,
     BuildInstallMachineRequest,
     CollectProducerOutputRequest,
     CollectOutputRequest,
@@ -17,6 +20,7 @@ from app.api.schemas import (
     CreateProducerRequest,
     CreateResourceNodeRequest,
     CreateSUSourceRequest,
+    CreateSUProducerRequest,
     CreateWorldRequest,
     SetModuleRecipeRequest,
     TickRequest,
@@ -25,6 +29,7 @@ from app.api.schemas import (
 )
 from app.engine.systems.construction import (
     build_and_install_machine_from_resources,
+    build_machine_to_inventory,
     can_build_machine_from_resources,
     upgrade_machine,
 )
@@ -32,6 +37,7 @@ from app.engine.entities.machine_instance import MachineInstance
 from app.engine.entities.module_instance import ModuleInstance
 from app.engine.entities.power_network import PowerNetwork, PowerConsumerRef
 from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.su_producer_building import SUProducerBuilding
 from app.engine.entities.factory_building import FactoryBuilding
 from app.engine.entities.producer_building import ProducerBuilding
 from app.engine.entities.resource_node import ResourceNode
@@ -46,6 +52,7 @@ from app.engine.systems.simulation import tick
 
 router = APIRouter(prefix="/api", tags=["Factory Lab API V2"])
 SUPPORTED_POWER_CONSUMER_TYPES = {"factory", "producer"}
+SUPPORTED_POWER_SOURCE_TYPES = {"su_source", "su_producer"}
 
 
 def bad_request(message: str) -> None:
@@ -112,6 +119,29 @@ def validate_su_source_type(world: World, source_type: str) -> None:
         bad_request("source_type does not exist")
 
 
+def validate_su_producer_type(world: World, producer_type: str) -> None:
+    if world.definitions.get_su_producer(producer_type) is None:
+        bad_request("su producer_type does not exist")
+
+
+def validate_su_producer_level(
+    world: World,
+    producer_type: str,
+    level: int,
+) -> None:
+    producer_definition = world.definitions.get_su_producer(producer_type)
+    if producer_definition is None:
+        bad_request("su producer_type does not exist")
+
+    if producer_definition.get_level_definition(level) is None:
+        bad_request("su producer level is not defined")
+
+
+def validate_su_unit_type(world: World, unit_type: str) -> None:
+    if world.definitions.get_su_unit(unit_type) is None:
+        bad_request("unit_type does not exist")
+
+
 def validate_resource_node_type(world: World, node_type: str) -> None:
     if world.definitions.get_resource_node_definition(node_type) is None:
         bad_request("node_type does not exist")
@@ -160,6 +190,22 @@ def validate_machine_allowed_in_producer(
 def validate_power_consumer_type(consumer_type: str) -> None:
     if consumer_type not in SUPPORTED_POWER_CONSUMER_TYPES:
         bad_request("consumer_type is not supported")
+
+
+def validate_power_source_exists(
+    world: World,
+    source_type: str,
+    source_id: int,
+) -> None:
+    if source_type not in SUPPORTED_POWER_SOURCE_TYPES:
+        bad_request("source_type is not supported")
+
+    if source_type == "su_source":
+        memory_store.get_su_source_or_404(world, source_id)
+        return
+
+    if source_type == "su_producer":
+        memory_store.get_su_producer_or_404(world, source_id)
 
 
 def validate_power_consumer_exists(
@@ -237,6 +283,34 @@ def test_add_inventory_item(
     return world.to_dict()
 
 
+@router.get("/worlds/{world_id}/inventory")
+def get_world_inventory(world_id: int):
+    world = memory_store.get_world_or_404(world_id)
+    return world.inventory.to_dict()
+
+
+@router.post("/worlds/{world_id}/inventory/machines/build")
+def build_machine_into_inventory(
+    world_id: int,
+    request: BuildInventoryMachineRequest,
+):
+    world = memory_store.get_world_or_404(world_id)
+    validate_machine_type(world, request.machine_type)
+    if request.level < 1:
+        bad_request("level must be greater than or equal to 1")
+
+    if not build_machine_to_inventory(
+        world.inventory,
+        world.definitions,
+        request.machine_type,
+        level=request.level,
+        metadata=request.metadata,
+    ):
+        bad_request("Could not build machine into inventory")
+
+    return world.to_dict()
+
+
 @router.get("/worlds/{world_id}/catalog/machines")
 def list_world_machines(world_id: int):
     world = memory_store.get_world_or_404(world_id)
@@ -244,6 +318,17 @@ def list_world_machines(world_id: int):
         "machines": [
             machine.to_dict()
             for machine in world.definitions.machines.values()
+        ]
+    }
+
+
+@router.get("/worlds/{world_id}/catalog/objects")
+def list_world_objects(world_id: int):
+    world = memory_store.get_world_or_404(world_id)
+    return {
+        "objects": [
+            object_definition.to_dict()
+            for object_definition in world.definitions.objects.values()
         ]
     }
 
@@ -277,6 +362,28 @@ def list_world_su_sources(world_id: int):
         "su_sources": [
             asdict(su_source)
             for su_source in world.definitions.su_sources.values()
+        ]
+    }
+
+
+@router.get("/worlds/{world_id}/catalog/su-units")
+def list_world_su_units(world_id: int):
+    world = memory_store.get_world_or_404(world_id)
+    return {
+        "su_units": [
+            su_unit.to_dict()
+            for su_unit in world.definitions.su_units.values()
+        ]
+    }
+
+
+@router.get("/worlds/{world_id}/catalog/su-producers")
+def list_world_su_producers(world_id: int):
+    world = memory_store.get_world_or_404(world_id)
+    return {
+        "su_producers": [
+            su_producer.to_dict()
+            for su_producer in world.definitions.su_producers.values()
         ]
     }
 
@@ -871,6 +978,133 @@ def delete_su_source(
     return world.to_dict()
 
 
+@router.post("/worlds/{world_id}/su-producers")
+def create_su_producer(
+    world_id: int,
+    request: CreateSUProducerRequest,
+):
+    world = memory_store.get_world_or_404(world_id)
+    validate_su_producer_type(world, request.producer_type)
+    validate_su_producer_level(world, request.producer_type, request.level)
+
+    su_producer = SUProducerBuilding(
+        id=memory_store.allocate_su_producer_id(),
+        name=request.name,
+        producer_type=request.producer_type,
+        x=request.x,
+        y=request.y,
+        level=request.level,
+        enabled=request.enabled,
+    )
+    world.add_su_producer(su_producer)
+    return su_producer.to_dict()
+
+
+@router.get("/worlds/{world_id}/su-producers/{su_producer_id}")
+def get_su_producer(
+    world_id: int,
+    su_producer_id: int,
+):
+    world = memory_store.get_world_or_404(world_id)
+    su_producer = memory_store.get_su_producer_or_404(world, su_producer_id)
+    return su_producer.to_dict()
+
+
+@router.delete("/worlds/{world_id}/su-producers/{su_producer_id}")
+def delete_su_producer(
+    world_id: int,
+    su_producer_id: int,
+):
+    world = memory_store.get_world_or_404(world_id)
+    memory_store.get_su_producer_or_404(world, su_producer_id)
+
+    world.remove_su_producer(su_producer_id)
+    for network in world.power_networks:
+        network.remove_source(su_producer_id, "su_producer")
+
+    return world.to_dict()
+
+
+@router.post("/worlds/{world_id}/su-producers/{su_producer_id}/level-up")
+def level_up_su_producer(
+    world_id: int,
+    su_producer_id: int,
+):
+    world = memory_store.get_world_or_404(world_id)
+    su_producer = memory_store.get_su_producer_or_404(world, su_producer_id)
+
+    if not su_producer.level_up(world.definitions, world.inventory):
+        bad_request("Not enough resources or no next SU producer level")
+
+    return world.to_dict()
+
+
+@router.post("/worlds/{world_id}/su-producers/{su_producer_id}/units")
+def add_su_producer_unit(
+    world_id: int,
+    su_producer_id: int,
+    request: AddSUProducerUnitRequest,
+):
+    world = memory_store.get_world_or_404(world_id)
+    su_producer = memory_store.get_su_producer_or_404(world, su_producer_id)
+    validate_positive_amount(request.amount)
+    validate_su_unit_type(world, request.unit_type)
+
+    producer_definition = world.definitions.get_su_producer(su_producer.producer_type)
+    if request.unit_type not in producer_definition.allowed_unit_types:
+        bad_request("unit_type is not compatible with this SU producer")
+
+    if su_producer.get_installed_unit_count() + request.amount > su_producer.get_unit_slot_limit(
+        world.definitions
+    ):
+        bad_request("SU producer unit slot limit reached")
+
+    unit_definition = world.definitions.get_su_unit(request.unit_type)
+    total_cost = {
+        item_id: amount * request.amount
+        for item_id, amount in unit_definition.build_cost.items()
+    }
+    for item_id, amount in total_cost.items():
+        if world.inventory.get(item_id, 0) < amount:
+            bad_request("Not enough resources to build SU unit")
+
+    for item_id, amount in total_cost.items():
+        world.inventory.remove_normal_item(item_id, amount)
+
+    su_producer.add_unit(request.unit_type, request.amount)
+    return su_producer.to_dict()
+
+
+@router.delete("/worlds/{world_id}/su-producers/{su_producer_id}/units/{unit_type}")
+def remove_su_producer_unit(
+    world_id: int,
+    su_producer_id: int,
+    unit_type: str,
+):
+    world = memory_store.get_world_or_404(world_id)
+    su_producer = memory_store.get_su_producer_or_404(world, su_producer_id)
+    validate_su_unit_type(world, unit_type)
+
+    if not su_producer.remove_unit(unit_type, 1):
+        raise HTTPException(status_code=404, detail="SU producer unit not found")
+
+    return su_producer.to_dict()
+
+
+@router.post("/worlds/{world_id}/su-producers/{su_producer_id}/inputs")
+def add_su_producer_input(
+    world_id: int,
+    su_producer_id: int,
+    request: AddSUProducerInputRequest,
+):
+    world = memory_store.get_world_or_404(world_id)
+    su_producer = memory_store.get_su_producer_or_404(world, su_producer_id)
+    validate_positive_amount(request.amount)
+
+    su_producer.add_input_item(request.item_id, request.amount)
+    return su_producer.to_dict()
+
+
 @router.post("/worlds/{world_id}/power-networks")
 def create_power_network(
     world_id: int,
@@ -915,9 +1149,9 @@ def add_power_network_source(
 ):
     world = memory_store.get_world_or_404(world_id)
     power_network = memory_store.get_power_network_or_404(world, network_id)
-    memory_store.get_su_source_or_404(world, request.source_id)
+    validate_power_source_exists(world, request.source_type, request.source_id)
 
-    power_network.add_source(request.source_id)
+    power_network.add_source(request.source_id, request.source_type)
     return power_network.to_dict()
 
 
@@ -929,9 +1163,12 @@ def remove_power_network_source(
 ):
     world = memory_store.get_world_or_404(world_id)
     power_network = memory_store.get_power_network_or_404(world, network_id)
-    memory_store.get_su_source_or_404(world, source_id)
 
-    if not power_network.remove_source(source_id):
+    removed = power_network.remove_source(source_id)
+    if not removed:
+        removed = power_network.remove_source(source_id, "su_producer")
+
+    if not removed:
         raise HTTPException(status_code=404, detail="Power network source not found")
 
     return power_network.to_dict()

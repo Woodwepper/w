@@ -14,6 +14,12 @@ class AddInventoryItemRequest(BaseModel):
     amount: int
 
 
+class BuildInventoryMachineRequest(BaseModel):
+    machine_type: str
+    level: int = 1
+    metadata: dict = Field(default_factory=dict)
+
+
 class CreateFactoryRequest(BaseModel):
     name: str
     x: int = 0
@@ -72,6 +78,7 @@ class CreatePowerNetworkRequest(BaseModel):
 
 class AddNetworkSourceRequest(BaseModel):
     source_id: int
+    source_type: str = "su_source"
 
 
 class AddNetworkConsumerRequest(BaseModel):
@@ -101,5 +108,24 @@ class CreateProducerRequest(BaseModel):
 
 
 class CollectProducerOutputRequest(BaseModel):
+    item_id: str
+    amount: int
+
+
+class CreateSUProducerRequest(BaseModel):
+    producer_type: str
+    name: str
+    x: int = 0
+    y: int = 0
+    level: int = 1
+    enabled: bool = True
+
+
+class AddSUProducerUnitRequest(BaseModel):
+    unit_type: str
+    amount: int = 1
+
+
+class AddSUProducerInputRequest(BaseModel):
     item_id: str
     amount: int

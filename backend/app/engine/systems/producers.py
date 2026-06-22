@@ -12,6 +12,10 @@ from app.engine.definitions.producer_definition import ProducerDefinition
 from app.engine.core.statuses import ProducerStatus
 from app.engine.entities.resource_node import ResourceNode
 from app.engine.core.world import World
+from app.engine.systems.machine_hosts import (
+    can_install_machine_on_host,
+    create_machine_instance,
+)
 
 
 def calculate_producer_su_required(
@@ -41,20 +45,14 @@ def can_install_machine_in_producer(
     if producer_definition is None:
         return False
 
-    machine_definition = definitions.get_machine(machine.machine_type)
-    if machine_definition is None:
-        return False
-
-    if machine.machine_type not in producer_definition.allowed_machine_types:
-        return False
-
-    if producer.get_machine(machine.id) is not None:
-        return False
-
-    if len(producer.installed_machines) >= producer.get_machine_slot_limit(definitions):
-        return False
-
-    return True
+    return can_install_machine_on_host(
+        machine=machine,
+        definitions=definitions,
+        allowed_machine_types=producer_definition.allowed_machine_types,
+        installed_machines=producer.installed_machines,
+        slot_limit=producer.get_machine_slot_limit(definitions),
+        get_existing_machine=producer.get_machine,
+    )
 
 
 def install_machine_in_producer(
@@ -84,11 +82,11 @@ def build_and_install_machine_in_producer_from_resources(
     if producer is None:
         return False
 
-    proposed_machine = MachineInstance(
-        id=machine_id,
-        machine_type=machine_type,
-        level=max(1, level),
-        metadata=dict(metadata or {}),
+    proposed_machine = create_machine_instance(
+        machine_type,
+        machine_id,
+        level,
+        metadata,
     )
     if not can_install_machine_in_producer(
         producer,

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from app.engine.instances.module_instance import ModuleInstance
+from app.engine.entities.module_instance import ModuleInstance
 
 
 @dataclass(frozen=True, init=False)
@@ -38,7 +38,7 @@ class ModuleDefinition:
 
 
 def get_module_definition(module_type: str) -> ModuleDefinition | None:
-    from app.engine.definitions.module_definitions import MODULE_DEFINITIONS
+    from app.engine.content.module_definitions import MODULE_DEFINITIONS
 
     return MODULE_DEFINITIONS.get(module_type)
 
@@ -78,7 +78,7 @@ def get_efficiency_multiplier_for_level(level: int) -> float:
 
 def __getattr__(name: str):
     if name == "MODULE_DEFINITIONS":
-        from app.engine.definitions import module_definitions
+        from app.engine.content import module_definitions
 
         return module_definitions.MODULE_DEFINITIONS
 

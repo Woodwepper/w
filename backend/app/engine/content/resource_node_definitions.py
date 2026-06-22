@@ -1,4 +1,4 @@
-from app.engine.models.resource_node_definition import ResourceNodeDefinition
+from app.engine.definitions.resource_node_definition import ResourceNodeDefinition
 
 
 RESOURCE_NODE_DEFINITIONS = {

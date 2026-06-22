@@ -1,4 +1,4 @@
-from app.engine.models.su_source_definition import SUSourceDefinition
+from app.engine.definitions.su_source_definition import SUSourceDefinition
 
 
 SU_SOURCE_DEFINITIONS = {

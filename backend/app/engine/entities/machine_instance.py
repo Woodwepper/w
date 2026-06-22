@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.engine.models.factory_status import FactoryStatus
+from app.engine.core.statuses import FactoryStatus
 
 
 @dataclass

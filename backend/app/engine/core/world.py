@@ -1,13 +1,15 @@
 from dataclasses import dataclass, field
 
-from app.engine.instances.power_network import PowerNetwork
-from app.engine.instances.su_source_instance import SUSourceInstance
-
-from .factory_building import FactoryBuilding
-from .game_definitions import GameDefinitions, create_default_definitions
-from .producer_building import ProducerBuilding
-from .resource_node import ResourceNode
-from .su_source import SUSource
+from app.engine.entities.power_network import PowerNetwork
+from app.engine.entities.factory_building import FactoryBuilding
+from app.engine.entities.producer_building import ProducerBuilding
+from app.engine.entities.resource_node import ResourceNode
+from app.engine.entities.su_source import SUSource
+from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.definitions.game_definitions import (
+    GameDefinitions,
+    create_default_definitions,
+)
 
 
 @dataclass

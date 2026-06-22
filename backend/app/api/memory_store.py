@@ -1,13 +1,13 @@
 from fastapi import HTTPException
 
-from app.engine.instances.machine_instance import MachineInstance
-from app.engine.instances.module_instance import ModuleInstance
-from app.engine.instances.power_network import PowerNetwork
-from app.engine.instances.su_source_instance import SUSourceInstance
-from app.engine.models.factory_building import FactoryBuilding
-from app.engine.models.producer_building import ProducerBuilding
-from app.engine.models.resource_node import ResourceNode
-from app.engine.models.world import World
+from app.engine.entities.machine_instance import MachineInstance
+from app.engine.entities.module_instance import ModuleInstance
+from app.engine.entities.power_network import PowerNetwork
+from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.factory_building import FactoryBuilding
+from app.engine.entities.producer_building import ProducerBuilding
+from app.engine.entities.resource_node import ResourceNode
+from app.engine.core.world import World
 
 
 worlds: dict[int, World] = {}

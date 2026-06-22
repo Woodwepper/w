@@ -1,5 +1,5 @@
-from app.engine.models.producer_definition import ProducerDefinition
-from app.engine.models.producer_level_definition import ProducerLevelDefinition
+from app.engine.definitions.producer_definition import ProducerDefinition
+from app.engine.definitions.producer_level_definition import ProducerLevelDefinition
 
 
 DEFAULT_LEVELS = {

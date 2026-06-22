@@ -1,10 +1,9 @@
 from dataclasses import dataclass, field
 
-from app.engine.instances.module_instance import ModuleInstance
-
-from .factory_level_definition import FactoryLevelDefinition
-from .factory_status import FactoryStatus
-from .game_definitions import GameDefinitions
+from app.engine.entities.module_instance import ModuleInstance
+from app.engine.core.statuses import FactoryStatus
+from app.engine.definitions.factory_level_definition import FactoryLevelDefinition
+from app.engine.definitions.game_definitions import GameDefinitions
 
 
 @dataclass

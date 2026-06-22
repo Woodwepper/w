@@ -1,16 +1,16 @@
-from app.engine.models.factory_building import FactoryBuilding
-from app.engine.models.factory_status import FactoryStatus
-from app.engine.models.producer_building import ProducerBuilding
-from app.engine.models.producer_status import ProducerStatus
-from app.engine.models.world import World
-from app.engine.power import (
+from app.engine.entities.factory_building import FactoryBuilding
+from app.engine.core.statuses import FactoryStatus
+from app.engine.entities.producer_building import ProducerBuilding
+from app.engine.core.statuses import ProducerStatus
+from app.engine.core.world import World
+from app.engine.systems.power import (
     allocate_power,
     calculate_factory_su_required as calculate_power_factory_su_required,
     calculate_network_su_output,
     calculate_producer_su_required as calculate_power_producer_su_required,
 )
-from app.engine.producers import process_producer
-from app.engine.production import process_factory
+from app.engine.systems.producers import process_producer
+from app.engine.systems.production import process_factory
 
 
 def calculate_su_produced(world: World) -> int:

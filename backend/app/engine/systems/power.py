@@ -1,14 +1,14 @@
 from typing import Any
 
-from app.engine.instances.machine_instance import MachineInstance
-from app.engine.instances.power_network import PowerNetwork
-from app.engine.instances.su_source_instance import SUSourceInstance
-from app.engine.models.producer_building import ProducerBuilding
-from app.engine.models.producer_status import ProducerStatus
-from app.engine.models.factory_building import FactoryBuilding
-from app.engine.models.factory_status import FactoryStatus
-from app.engine.models.world import World
-from app.engine.producers import (
+from app.engine.entities.machine_instance import MachineInstance
+from app.engine.entities.power_network import PowerNetwork
+from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.producer_building import ProducerBuilding
+from app.engine.core.statuses import ProducerStatus
+from app.engine.entities.factory_building import FactoryBuilding
+from app.engine.core.statuses import FactoryStatus
+from app.engine.core.world import World
+from app.engine.systems.producers import (
     calculate_producer_su_required as calculate_power_producer_su_required,
 )
 

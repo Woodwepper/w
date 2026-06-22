@@ -58,7 +58,7 @@ class MachineDefinition:
 
 def __getattr__(name: str):
     if name == "MACHINE_DEFINITIONS":
-        from app.engine.definitions.machine_definitions import MACHINE_DEFINITIONS
+        from app.engine.content.machine_definitions import MACHINE_DEFINITIONS
 
         return MACHINE_DEFINITIONS
 

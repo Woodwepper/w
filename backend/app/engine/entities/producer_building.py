@@ -1,9 +1,8 @@
 from dataclasses import dataclass, field
 
-from app.engine.instances.machine_instance import MachineInstance
-
-from .game_definitions import GameDefinitions
-from .producer_status import ProducerStatus
+from app.engine.entities.machine_instance import MachineInstance
+from app.engine.core.statuses import ProducerStatus
+from app.engine.definitions.game_definitions import GameDefinitions
 
 
 @dataclass

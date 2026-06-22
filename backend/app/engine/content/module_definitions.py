@@ -1,4 +1,4 @@
-from app.engine.models.module_definition import ModuleDefinition
+from app.engine.definitions.module_definition import ModuleDefinition
 
 
 MACHINE_COUNT_BY_LEVEL = {

@@ -43,20 +43,20 @@ class Recipe:
 
 
 def recipe_exists(recipe_id: str) -> bool:
-    from app.engine.definitions.recipe_definitions import RECIPES
+    from app.engine.content.recipe_definitions import RECIPES
 
     return recipe_id in RECIPES
 
 
 def get_recipe(recipe_id: str) -> Recipe | None:
-    from app.engine.definitions.recipe_definitions import RECIPES
+    from app.engine.content.recipe_definitions import RECIPES
 
     return RECIPES.get(recipe_id)
 
 
 def __getattr__(name: str):
     if name == "RECIPES":
-        from app.engine.definitions.recipe_definitions import RECIPES
+        from app.engine.content.recipe_definitions import RECIPES
 
         return RECIPES
 

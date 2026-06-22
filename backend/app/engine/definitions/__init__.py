@@ -1,1 +1,1 @@
-"""Static engine definition catalogs."""
+"""Definition models and GameDefinitions."""

@@ -1,4 +1,4 @@
-from app.engine.models.recipe import Recipe
+from app.engine.definitions.recipe_definition import Recipe
 
 
 RECIPES = {

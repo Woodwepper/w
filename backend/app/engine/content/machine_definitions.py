@@ -1,4 +1,4 @@
-from app.engine.models.machine_definition import MachineDefinition
+from app.engine.definitions.machine_definition import MachineDefinition
 
 
 MACHINE_DEFINITIONS = {

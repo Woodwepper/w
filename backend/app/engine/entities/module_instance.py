@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from app.engine.models.factory_status import FactoryStatus
+from app.engine.core.statuses import FactoryStatus
 from .machine_instance import MachineInstance
 
 

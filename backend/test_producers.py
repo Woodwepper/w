@@ -1,15 +1,15 @@
 from fastapi.testclient import TestClient
 
 from app.api import memory_store
-from app.engine.instances.machine_instance import MachineInstance
-from app.engine.instances.power_network import PowerNetwork
-from app.engine.instances.su_source_instance import SUSourceInstance
-from app.engine.models.producer_building import ProducerBuilding
-from app.engine.models.producer_status import ProducerStatus
-from app.engine.models.resource_node import ResourceNode
-from app.engine.models.world import World
-from app.engine.power import calculate_producer_su_required
-from app.engine.simulation import tick
+from app.engine.entities.machine_instance import MachineInstance
+from app.engine.entities.power_network import PowerNetwork
+from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.producer_building import ProducerBuilding
+from app.engine.core.statuses import ProducerStatus
+from app.engine.entities.resource_node import ResourceNode
+from app.engine.core.world import World
+from app.engine.systems.power import calculate_producer_su_required
+from app.engine.systems.simulation import tick
 from app.main import app
 
 

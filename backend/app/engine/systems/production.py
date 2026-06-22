@@ -1,9 +1,9 @@
-from app.engine.instances.machine_instance import MachineInstance
-from app.engine.instances.module_instance import ModuleInstance
-from app.engine.models.factory_building import FactoryBuilding
-from app.engine.models.factory_status import FactoryStatus
-from app.engine.models.recipe import Recipe
-from app.engine.models.world import World
+from app.engine.entities.machine_instance import MachineInstance
+from app.engine.entities.module_instance import ModuleInstance
+from app.engine.entities.factory_building import FactoryBuilding
+from app.engine.core.statuses import FactoryStatus
+from app.engine.definitions.recipe_definition import Recipe
+from app.engine.core.world import World
 
 
 def process_factory(

@@ -1,4 +1,4 @@
-from app.engine.models.factory_level_definition import FactoryLevelDefinition
+from app.engine.definitions.factory_level_definition import FactoryLevelDefinition
 
 
 FACTORY_LEVEL_DEFINITIONS = {

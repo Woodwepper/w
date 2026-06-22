@@ -1,10 +1,10 @@
 from typing import Any
 
-from app.engine.instances.machine_instance import MachineInstance
-from app.engine.instances.module_instance import ModuleInstance
-from app.engine.models.factory_building import FactoryBuilding
-from app.engine.models.game_definitions import GameDefinitions
-from app.engine.models.world import World
+from app.engine.entities.machine_instance import MachineInstance
+from app.engine.entities.module_instance import ModuleInstance
+from app.engine.entities.factory_building import FactoryBuilding
+from app.engine.definitions.game_definitions import GameDefinitions
+from app.engine.core.world import World
 
 
 def _has_resources(inventory: dict[str, int], cost: dict[str, int]) -> bool:

@@ -1,20 +1,20 @@
 from dataclasses import dataclass, field
 
-from app.engine.definitions.factory_level_definitions import FACTORY_LEVEL_DEFINITIONS
-from app.engine.definitions.machine_definitions import MACHINE_DEFINITIONS
-from app.engine.definitions.module_definitions import MODULE_DEFINITIONS
-from app.engine.definitions.producer_definitions import PRODUCER_DEFINITIONS
-from app.engine.definitions.recipe_definitions import RECIPES
-from app.engine.definitions.resource_node_definitions import RESOURCE_NODE_DEFINITIONS
-from app.engine.definitions.su_source_definitions import SU_SOURCE_DEFINITIONS
-from app.engine.models.factory_level_definition import FactoryLevelDefinition
-from app.engine.models.machine_definition import MachineDefinition
-from app.engine.models.module_definition import ModuleDefinition
-from app.engine.models.producer_definition import ProducerDefinition
-from app.engine.models.producer_level_definition import ProducerLevelDefinition
-from app.engine.models.recipe import Recipe
-from app.engine.models.resource_node_definition import ResourceNodeDefinition
-from app.engine.models.su_source_definition import SUSourceDefinition
+from app.engine.content.factory_level_definitions import FACTORY_LEVEL_DEFINITIONS
+from app.engine.content.machine_definitions import MACHINE_DEFINITIONS
+from app.engine.content.module_definitions import MODULE_DEFINITIONS
+from app.engine.content.producer_definitions import PRODUCER_DEFINITIONS
+from app.engine.content.recipe_definitions import RECIPES
+from app.engine.content.resource_node_definitions import RESOURCE_NODE_DEFINITIONS
+from app.engine.content.su_source_definitions import SU_SOURCE_DEFINITIONS
+from app.engine.definitions.factory_level_definition import FactoryLevelDefinition
+from app.engine.definitions.machine_definition import MachineDefinition
+from app.engine.definitions.module_definition import ModuleDefinition
+from app.engine.definitions.producer_definition import ProducerDefinition
+from app.engine.definitions.producer_level_definition import ProducerLevelDefinition
+from app.engine.definitions.recipe_definition import Recipe
+from app.engine.definitions.resource_node_definition import ResourceNodeDefinition
+from app.engine.definitions.su_source_definition import SUSourceDefinition
 
 
 @dataclass

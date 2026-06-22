@@ -1,17 +1,17 @@
 from typing import Any
 
-from app.engine.construction import (
+from app.engine.systems.construction import (
     build_machine_from_resources,
     can_build_machine_from_resources,
     upgrade_machine,
 )
-from app.engine.instances.machine_instance import MachineInstance
-from app.engine.models.factory_status import FactoryStatus
-from app.engine.models.producer_building import ProducerBuilding
-from app.engine.models.producer_definition import ProducerDefinition
-from app.engine.models.producer_status import ProducerStatus
-from app.engine.models.resource_node import ResourceNode
-from app.engine.models.world import World
+from app.engine.entities.machine_instance import MachineInstance
+from app.engine.core.statuses import FactoryStatus
+from app.engine.entities.producer_building import ProducerBuilding
+from app.engine.definitions.producer_definition import ProducerDefinition
+from app.engine.core.statuses import ProducerStatus
+from app.engine.entities.resource_node import ResourceNode
+from app.engine.core.world import World
 
 
 def calculate_producer_su_required(

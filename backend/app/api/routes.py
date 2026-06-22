@@ -23,25 +23,25 @@ from app.api.schemas import (
     UpdateFactoryRequest,
     UpgradeMachineRequest,
 )
-from app.engine.construction import (
+from app.engine.systems.construction import (
     build_and_install_machine_from_resources,
     can_build_machine_from_resources,
     upgrade_machine,
 )
-from app.engine.instances.machine_instance import MachineInstance
-from app.engine.instances.module_instance import ModuleInstance
-from app.engine.instances.power_network import PowerNetwork, PowerConsumerRef
-from app.engine.instances.su_source_instance import SUSourceInstance
-from app.engine.models.factory_building import FactoryBuilding
-from app.engine.models.producer_building import ProducerBuilding
-from app.engine.models.resource_node import ResourceNode
-from app.engine.producers import (
+from app.engine.entities.machine_instance import MachineInstance
+from app.engine.entities.module_instance import ModuleInstance
+from app.engine.entities.power_network import PowerNetwork, PowerConsumerRef
+from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.factory_building import FactoryBuilding
+from app.engine.entities.producer_building import ProducerBuilding
+from app.engine.entities.resource_node import ResourceNode
+from app.engine.systems.producers import (
     build_and_install_machine_in_producer_from_resources,
     can_install_machine_in_producer,
     upgrade_producer_machine,
 )
-from app.engine.models.world import World
-from app.engine.simulation import tick
+from app.engine.core.world import World
+from app.engine.systems.simulation import tick
 
 
 router = APIRouter(prefix="/api", tags=["Factory Lab API V2"])

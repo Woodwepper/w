@@ -1,15 +1,15 @@
-from app.engine.construction import build_and_install_machine_from_resources
-from app.engine.instances.machine_instance import MachineInstance
-from app.engine.instances.module_instance import ModuleInstance
-from app.engine.instances.power_network import PowerNetwork
-from app.engine.instances.su_source_instance import SUSourceInstance
-from app.engine.models.factory_building import FactoryBuilding
-from app.engine.models.factory_status import FactoryStatus
-from app.engine.models.game_definitions import create_default_definitions
-from app.engine.models.world import World
-from app.engine.power import calculate_factory_su_required, calculate_machine_su_required
-from app.engine.production import process_factory
-from app.engine.simulation import tick
+from app.engine.systems.construction import build_and_install_machine_from_resources
+from app.engine.entities.machine_instance import MachineInstance
+from app.engine.entities.module_instance import ModuleInstance
+from app.engine.entities.power_network import PowerNetwork
+from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.factory_building import FactoryBuilding
+from app.engine.core.statuses import FactoryStatus
+from app.engine.definitions.game_definitions import create_default_definitions
+from app.engine.core.world import World
+from app.engine.systems.power import calculate_factory_su_required, calculate_machine_su_required
+from app.engine.systems.production import process_factory
+from app.engine.systems.simulation import tick
 
 
 PRESS_BUILD_COST = {

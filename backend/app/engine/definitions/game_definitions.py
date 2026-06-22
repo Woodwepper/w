@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from app.engine.definitions.factory_level_definition import FactoryLevelDefinition
 from app.engine.definitions.machine_definition import MachineDefinition
 from app.engine.definitions.module_definition import ModuleDefinition
+from app.engine.definitions.object_definition import ObjectDefinition
 from app.engine.definitions.producer_definition import ProducerDefinition
 from app.engine.definitions.recipe_definition import Recipe
 from app.engine.definitions.resource_node_definition import ResourceNodeDefinition
@@ -14,6 +15,7 @@ from app.engine.definitions.su_unit_definition import SUUnitDefinition
 @dataclass
 class GameDefinitions:
     machines: dict[str, MachineDefinition] = field(default_factory=dict)
+    objects: dict[str, ObjectDefinition] = field(default_factory=dict)
     modules: dict[str, ModuleDefinition] = field(default_factory=dict)
     recipes: dict[str, Recipe] = field(default_factory=dict)
     su_sources: dict[str, SUSourceDefinition] = field(default_factory=dict)
@@ -25,6 +27,9 @@ class GameDefinitions:
 
     def get_machine(self, machine_type: str) -> MachineDefinition | None:
         return self.machines.get(machine_type)
+
+    def get_object(self, object_id: str) -> ObjectDefinition | None:
+        return self.objects.get(object_id)
 
     def get_module(self, module_type: str) -> ModuleDefinition | None:
         return self.modules.get(module_type)
@@ -58,6 +63,10 @@ class GameDefinitions:
             "machines": {
                 machine_id: machine.to_dict()
                 for machine_id, machine in self.machines.items()
+            },
+            "objects": {
+                object_id: object_definition.to_dict()
+                for object_id, object_definition in self.objects.items()
             },
             "modules": {
                 module_id: module.to_dict()
@@ -99,6 +108,10 @@ class GameDefinitions:
             machines={
                 machine_id: MachineDefinition.from_dict(machine)
                 for machine_id, machine in data.get("machines", {}).items()
+            },
+            objects={
+                object_id: ObjectDefinition.from_dict(object_definition)
+                for object_id, object_definition in data.get("objects", {}).items()
             },
             modules={
                 module_id: ModuleDefinition.from_dict(module)

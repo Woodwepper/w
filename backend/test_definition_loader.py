@@ -11,6 +11,7 @@ from app.engine.definitions.game_definitions import create_default_definitions
 
 TEMPLATE_FILES = [
     "machines.json",
+    "objects.json",
     "modules.json",
     "recipes.json",
     "su_sources.json",
@@ -35,6 +36,8 @@ def test_1_load_default_template() -> None:
     definitions = load_game_definitions_from_template("default")
 
     assert definitions.get_machine("mechanical_press") is not None
+    assert definitions.get_object("iron_ingot").stack_kind == "normal"
+    assert definitions.get_object("mechanical_press").entity_type == "machine"
     assert definitions.get_module("pressing_line") is not None
     assert definitions.get_recipe("press_iron_sheet") is not None
     assert definitions.get_su_source("water_wheel") is not None
@@ -56,6 +59,7 @@ def test_2_create_default_definitions_uses_template_loader() -> None:
         "andesite_alloy": 2,
         "iron_sheet": 1,
     }
+    assert definitions.get_object("raw_iron").category == "item"
     assert definitions.get_producer("mine").get_level_definition(2).upgrade_cost == {
         "andesite_alloy": 8,
         "iron_sheet": 6,
@@ -89,6 +93,7 @@ def test_4_game_definitions_roundtrip() -> None:
     restored = type(definitions).from_dict(definitions.to_dict())
 
     assert restored.get_machine("mechanical_press").su_cost == 1024
+    assert restored.get_object("mechanical_press").stack_kind == "entity"
     assert restored.get_module("pressing_line").allowed_machine_types == [
         "mechanical_press"
     ]

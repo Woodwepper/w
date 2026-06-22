@@ -7,6 +7,7 @@ from app.engine.entities.resource_node import ResourceNode
 from app.engine.entities.su_source import SUSource
 from app.engine.entities.su_source_instance import SUSourceInstance
 from app.engine.entities.su_producer_building import SUProducerBuilding
+from app.engine.inventory.inventory import Inventory
 from app.engine.definitions.game_definitions import (
     GameDefinitions,
     create_default_definitions,
@@ -21,7 +22,7 @@ class World:
     definitions: GameDefinitions = field(default_factory=create_default_definitions)
     simulated_time: float = 0.0
 
-    inventory: dict[str, int] = field(default_factory=dict)
+    inventory: Inventory = field(default_factory=Inventory)
 
     su_sources: list[SUSourceInstance] = field(default_factory=list)
     su_producers: list[SUProducerBuilding] = field(default_factory=list)
@@ -35,24 +36,16 @@ class World:
     su_available: int = 0
 
     def add_inventory_item(self, item_id: str, amount: int) -> None:
-        self.inventory[item_id] = self.get_inventory_amount(item_id) + amount
+        self.inventory.add_normal_item(item_id, amount)
 
     def remove_inventory_item(self, item_id: str, amount: int) -> bool:
-        current_amount = self.get_inventory_amount(item_id)
-        if current_amount < amount:
-            return False
-        remaining_amount = current_amount - amount
-        if remaining_amount <= 0:
-            self.inventory.pop(item_id, None)
-        else:
-            self.inventory[item_id] = remaining_amount
-        return True
+        return self.inventory.remove_normal_item(item_id, amount)
 
     def get_inventory_amount(self, item_id: str) -> int:
-        return self.inventory.get(item_id, 0)
+        return self.inventory.get_normal_amount(item_id)
 
     def has_inventory_item(self, item_id: str, amount: int) -> bool:
-        return self.get_inventory_amount(item_id) >= amount
+        return self.inventory.has_normal_items(item_id, amount)
 
     def add_factory(self, factory: FactoryBuilding) -> None:
         self.factories.append(factory)
@@ -156,7 +149,7 @@ class World:
             id=data["id"],
             name=data["name"],
             simulated_time=data.get("simulated_time", 0.0),
-            inventory=dict(data.get("inventory", {})),
+            inventory=Inventory.from_dict(data.get("inventory", {})),
             su_sources=[
                 _su_source_from_dict(item) if isinstance(item, dict) else item
                 for item in data.get("su_sources", [])
@@ -191,7 +184,7 @@ class World:
             "id": self.id,
             "name": self.name,
             "simulated_time": self.simulated_time,
-            "inventory": dict(self.inventory),
+            "inventory": self.inventory.to_dict(),
             "su_sources": [s.to_dict() for s in self.su_sources],
             "su_producers": [p.to_dict() for p in self.su_producers],
             "power_networks": [p.to_dict() for p in self.power_networks],

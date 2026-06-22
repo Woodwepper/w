@@ -5,20 +5,22 @@ from app.engine.entities.module_instance import ModuleInstance
 from app.engine.entities.factory_building import FactoryBuilding
 from app.engine.definitions.game_definitions import GameDefinitions
 from app.engine.core.world import World
+from app.engine.inventory.entity_stack import EntityStack
+from app.engine.inventory.inventory import Inventory
 from app.engine.systems.machine_hosts import (
     can_install_machine_on_host,
     create_machine_instance,
 )
 
 
-def _has_resources(inventory: dict[str, int], cost: dict[str, int]) -> bool:
+def _has_resources(inventory, cost: dict[str, int]) -> bool:
     for item_id, amount in cost.items():
         if inventory.get(item_id, 0) < amount:
             return False
     return True
 
 
-def _consume_resources(inventory: dict[str, int], cost: dict[str, int]) -> None:
+def _consume_resources(inventory, cost: dict[str, int]) -> None:
     for item_id, amount in cost.items():
         remaining_amount = inventory.get(item_id, 0) - amount
         if remaining_amount <= 0:
@@ -28,7 +30,7 @@ def _consume_resources(inventory: dict[str, int], cost: dict[str, int]) -> None:
 
 
 def can_build_machine_from_resources(
-    inventory: dict[str, int],
+    inventory,
     definitions: GameDefinitions,
     machine_type: str,
 ) -> bool:
@@ -40,7 +42,7 @@ def can_build_machine_from_resources(
 
 
 def build_machine_from_resources(
-    inventory: dict[str, int],
+    inventory,
     definitions: GameDefinitions,
     machine_type: str,
     machine_id: int,
@@ -57,6 +59,58 @@ def build_machine_from_resources(
     _consume_resources(inventory, machine_definition.build_cost)
 
     return create_machine_instance(machine_type, machine_id, level, metadata)
+
+
+def build_machine_to_inventory(
+    inventory: Inventory,
+    definitions: GameDefinitions,
+    machine_type: str,
+    level: int = 1,
+    metadata: dict[str, Any] | None = None,
+) -> bool:
+    machine_definition = definitions.get_machine(machine_type)
+    object_definition = definitions.get_object(machine_type)
+    if (
+        machine_definition is None
+        or object_definition is None
+        or object_definition.stack_kind != "entity"
+        or object_definition.entity_type != "machine"
+    ):
+        return False
+
+    if not _has_resources(inventory, machine_definition.build_cost):
+        return False
+
+    _consume_resources(inventory, machine_definition.build_cost)
+    entity_data = dict(object_definition.default_entity_data)
+    entity_data["level"] = max(1, level)
+    entity_data["metadata"] = dict(metadata or {})
+    inventory.add_entity_stack(
+        EntityStack(
+            object_id=machine_type,
+            entity_type="machine",
+            amount=1,
+            entity_data=entity_data,
+        )
+    )
+    return True
+
+
+def add_machine_to_inventory(
+    inventory: Inventory,
+    machine: MachineInstance,
+) -> None:
+    inventory.add_entity_stack(
+        EntityStack(
+            object_id=machine.machine_type,
+            entity_type="machine",
+            amount=1,
+            entity_data={
+                "level": machine.level,
+                "metadata": dict(machine.metadata),
+            },
+        )
+    )
 
 
 def can_install_machine_in_module(
@@ -153,7 +207,7 @@ def build_and_install_machine_from_resources(
 
 
 def can_upgrade_machine(
-    inventory: dict[str, int],
+    inventory,
     definitions: GameDefinitions,
     machine: MachineInstance,
     target_level: int,
@@ -173,7 +227,7 @@ def can_upgrade_machine(
 
 
 def upgrade_machine(
-    inventory: dict[str, int],
+    inventory,
     definitions: GameDefinitions,
     machine: MachineInstance,
     target_level: int,

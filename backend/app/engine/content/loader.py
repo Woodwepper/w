@@ -5,6 +5,7 @@ from typing import Any
 from app.engine.definitions.factory_level_definition import FactoryLevelDefinition
 from app.engine.definitions.machine_definition import MachineDefinition
 from app.engine.definitions.module_definition import ModuleDefinition
+from app.engine.definitions.object_definition import ObjectDefinition
 from app.engine.definitions.producer_definition import ProducerDefinition
 from app.engine.definitions.recipe_definition import Recipe
 from app.engine.definitions.resource_node_definition import ResourceNodeDefinition
@@ -19,6 +20,7 @@ class DefinitionLoadError(ValueError):
 
 REQUIRED_TEMPLATE_FILES = {
     "machines": "machines.json",
+    "objects": "objects.json",
     "modules": "modules.json",
     "recipes": "recipes.json",
     "su_sources": "su_sources.json",
@@ -48,6 +50,10 @@ def load_game_definitions_from_path(path: str | Path):
         machines={
             machine_id: MachineDefinition.from_dict(data)
             for machine_id, data in raw_data["machines"].items()
+        },
+        objects={
+            object_id: ObjectDefinition.from_dict(data)
+            for object_id, data in raw_data["objects"].items()
         },
         modules={
             module_id: ModuleDefinition.from_dict(data)
@@ -89,6 +95,7 @@ def load_game_definitions_from_path(path: str | Path):
 
 def validate_game_definitions(definitions) -> None:
     _validate_mapping_ids("machine", definitions.machines)
+    _validate_mapping_ids("object", definitions.objects)
     _validate_mapping_ids("module", definitions.modules)
     _validate_mapping_ids("recipe", definitions.recipes)
     _validate_mapping_ids("su_source", definitions.su_sources)
@@ -105,8 +112,29 @@ def validate_game_definitions(definitions) -> None:
                 machine_id,
                 f"Recipe {recipe.id} requires unknown machine {machine_id}",
             )
+        _validate_item_costs(
+            definitions,
+            recipe.input_items,
+            f"Recipe {recipe.id} input",
+        )
+        _validate_item_costs(
+            definitions,
+            recipe.output_items,
+            f"Recipe {recipe.id} output",
+        )
 
     for machine in definitions.machines.values():
+        _validate_item_costs(
+            definitions,
+            machine.build_cost,
+            f"Machine {machine.id} build_cost",
+        )
+        for level, upgrade_cost in machine.upgrade_costs.items():
+            _validate_item_costs(
+                definitions,
+                upgrade_cost,
+                f"Machine {machine.id} upgrade_cost level {level}",
+            )
         for recipe_id in machine.allowed_recipes:
             _require_key(
                 definitions.recipes,
@@ -142,6 +170,12 @@ def validate_game_definitions(definitions) -> None:
                 f"Producer {producer.id} allows unknown machine {machine_id}",
             )
         _validate_producer_levels(producer.id, producer.levels)
+        for level, level_definition in producer.levels.items():
+            _validate_item_costs(
+                definitions,
+                level_definition.upgrade_cost,
+                f"Producer {producer.id} upgrade_cost level {level}",
+            )
 
     for su_producer in definitions.su_producers.values():
         for unit_type in su_producer.allowed_unit_types:
@@ -151,6 +185,38 @@ def validate_game_definitions(definitions) -> None:
                 f"SU producer {su_producer.id} allows unknown SU unit {unit_type}",
             )
         _validate_su_producer_levels(su_producer.id, su_producer.levels)
+        for level, level_definition in su_producer.levels.items():
+            _validate_item_costs(
+                definitions,
+                level_definition.upgrade_cost,
+                f"SU producer {su_producer.id} upgrade_cost level {level}",
+            )
+
+    for level, level_definition in definitions.factory_levels.items():
+        _validate_item_costs(
+            definitions,
+            level_definition.upgrade_cost,
+            f"Factory level {level} upgrade_cost",
+        )
+
+    for resource_node in definitions.resource_nodes.values():
+        _require_object(
+            definitions,
+            resource_node.resource_type,
+            f"Resource node {resource_node.id} resource_type",
+        )
+
+    for su_unit in definitions.su_units.values():
+        _validate_item_costs(
+            definitions,
+            su_unit.input_items,
+            f"SU unit {su_unit.id} input",
+        )
+        _validate_item_costs(
+            definitions,
+            su_unit.build_cost,
+            f"SU unit {su_unit.id} build_cost",
+        )
 
 
 def _templates_root() -> Path:
@@ -246,3 +312,16 @@ def _validate_su_producer_levels(
 def _require_key(items: dict[str, Any], key: str, message: str) -> None:
     if key not in items:
         raise DefinitionLoadError(message)
+
+
+def _validate_item_costs(definitions, items: dict[str, int], label: str) -> None:
+    for item_id in items:
+        _require_object(definitions, item_id, label)
+
+
+def _require_object(definitions, object_id: str, label: str) -> None:
+    object_definition = definitions.get_object(object_id)
+    if object_definition is None:
+        raise DefinitionLoadError(f"{label} uses unknown object {object_id}")
+    if object_definition.stack_kind != "normal":
+        raise DefinitionLoadError(f"{label} must use normal object {object_id}")

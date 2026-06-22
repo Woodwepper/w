@@ -2,9 +2,7 @@
   "press_iron_sheet": {"id": "press_iron_sheet", "name": "Press Iron Sheet", "required_machines": ["mechanical_press"], "duration": 5.0, "input_items": {"iron_ingot": 1}, "output_items": {"iron_sheet": 1}},
   "press_copper_sheet": {"id": "press_copper_sheet", "name": "Press Copper Sheet", "required_machines": ["mechanical_press"], "duration": 5.0, "input_items": {"copper_ingot": 1}, "output_items": {"copper_sheet": 1}},
   "press_brass_sheet": {"id": "press_brass_sheet", "name": "Press Brass Sheet", "required_machines": ["mechanical_press"], "duration": 5.0, "input_items": {"brass_ingot": 1}, "output_items": {"brass_sheet": 1}},
-  "press_gold_sheet": {"id": "press_gold_sheet", "name": "Press Gold Sheet", "required_machines": ["mechanical_press"], "duration": 5.0, "input_items": {"gold_sheet": 1}, "output_items": {"sturdy_sheet": 1}},
-  "press_iron_plate": {"id": "press_iron_plate", "name": "Press Iron Plate", "required_machines": ["mechanical_press"], "duration": 6.0, "input_items": {"iron_sheet": 2}, "output_items": {"iron_plate": 1}},
-  "press_copper_plate": {"id": "press_copper_plate", "name": "Press Copper Plate", "required_machines": ["mechanical_press"], "duration": 6.0, "input_items": {"copper_sheet": 2}, "output_items": {"copper_plate": 1}},
+  "press_gold_sheet": {"id": "press_gold_sheet", "name": "Press Gold Sheet", "required_machines": ["mechanical_press"], "duration": 5, "input_items": {"gold_ingot": 1}, "output_items": {"gold_sheet": 1}},
   "press_iron_bolt": {"id": "press_iron_bolt", "name": "Press Iron Bolt", "required_machines": ["mechanical_press"], "duration": 4.0, "input_items": {"iron_nugget": 1}, "output_items": {"iron_bolt": 2}},
   "crush_raw_iron": {"id": "crush_raw_iron", "name": "Crush Raw Iron", "required_machines": ["crushing_wheel"], "duration": 5.0, "input_items": {"raw_iron": 1}, "output_items": {"crushed_raw_iron": 1}},
   "crush_raw_copper": {"id": "crush_raw_copper", "name": "Crush Raw Copper", "required_machines": ["crushing_wheel"], "duration": 5.0, "input_items": {"raw_copper": 1}, "output_items": {"crushed_raw_copper": 1}},
@@ -31,5 +29,6 @@
   "assemble_propeller": {"id": "assemble_propeller", "name": "Assemble Propeller", "required_machines": ["mechanical_assembler"], "duration": 5.0, "input_items": {"iron_sheet": 2, "shaft": 1}, "output_items": {"propeller": 1}},
   "assemble_electron_tube": {"id": "assemble_electron_tube", "name": "Assemble Electron Tube", "required_machines": ["mechanical_assembler"], "duration": 6.0, "input_items": {"glass": 1, "redstone": 1, "brass_sheet": 1}, "output_items": {"electron_tube": 1}},
   "assemble_brass_hand": {"id": "assemble_brass_hand", "name": "Assemble Brass Hand", "required_machines": ["mechanical_assembler"], "duration": 6.0, "input_items": {"brass_sheet": 2, "andesite_alloy": 1}, "output_items": {"brass_hand": 1}},
-  "assemble_precision_mechanism": {"id": "assemble_precision_mechanism", "name": "Assemble Precision Mechanism", "required_machines": ["mechanical_assembler"], "duration": 10.0, "input_items": {"cogwheel": 1, "large_cogwheel": 1, "brass_sheet": 1, "electron_tube": 1}, "output_items": {"precision_mechanism": 1}}
+  "assemble_precision_mechanism": {"id": "assemble_precision_mechanism", "name": "Assemble Precision Mechanism", "required_machines": ["mechanical_assembler"], "duration": 10.0, "input_items": {"cogwheel": 1, "large_cogwheel": 1, "brass_sheet": 1, "electron_tube": 1}, "output_items": {"precision_mechanism": 1}},
+  "press_sturdy_sheet": {"id": "press_sturdy_sheet", "name": "Press Sturdy Sheet", "required_machines": ["mechanical_press"], "duration": 8, "input_items": {"gold_sheet": 1, "iron_sheet": 2}, "output_items": {"sturdy_sheet": 1}}
 }

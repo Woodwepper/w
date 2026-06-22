@@ -39,20 +39,50 @@ def test_1_load_default_template() -> None:
 
     assert definitions.get_machine("mechanical_press") is not None
     assert definitions.get_object("iron_ingot").stack_kind == "normal"
+    assert definitions.get_object("raw_iron").category == "resource"
+    assert definitions.get_object("iron_ingot").category == "material"
+    assert definitions.get_object("iron_sheet").category == "sheet"
+    assert definitions.get_object("shaft").category == "kinetic_component"
+    assert definitions.get_object("andesite_casing").category == "casing"
+    assert definitions.get_object("precision_mechanism").category == "advanced_component"
+    assert definitions.get_object("coal").category == "fuel"
+    assert definitions.get_object("water").category == "fluid"
+    assert definitions.get_object("iron_plate") is None
+    assert definitions.get_object("copper_plate") is None
+    assert definitions.get_object("gold_ingot").category == "material"
     assert definitions.get_object("mechanical_press").entity_type == "machine"
     assert definitions.get_module("pressing_line") is not None
     assert definitions.get_recipe("press_iron_sheet") is not None
+    assert definitions.get_recipe("press_iron_plate") is None
+    assert definitions.get_recipe("press_copper_plate") is None
+    assert definitions.get_recipe("press_gold_sheet").input_items == {"gold_ingot": 1}
+    assert definitions.get_recipe("press_sturdy_sheet").output_items == {"sturdy_sheet": 1}
     assert definitions.get_su_unit("water_wheel_unit") is not None
     assert definitions.get_su_producer("river_power_complex") is not None
     assert definitions.get_factory_level(1) is not None
     assert definitions.get_resource_node_definition("iron_deposit") is not None
+    assert (
+        definitions.get_resource_node_definition("andesite_outcrop").resource_type
+        == "andesite"
+    )
+    assert (
+        definitions.get_resource_node_definition("redstone_deposit").resource_type
+        == "redstone"
+    )
     assert definitions.get_producer("mine") is not None
     assert definitions.get_producer("mine").allowed_machine_types == [
         "mechanical_drill"
     ]
+    assert "redstone_deposit" in definitions.get_producer("mine").allowed_node_types
+    assert "andesite_outcrop" in definitions.get_producer("quarry").allowed_node_types
     assert definitions.get_producer("mine").get_level_definition(1).machine_slots == 2
     assert definitions.get_object("mine").entity_type == "producer"
+    assert definitions.get_object("mine").metadata["factory_lab_abstraction"] is True
     assert definitions.get_object("river_power_complex").entity_type == "su_producer"
+    assert (
+        definitions.get_object("river_power_complex").metadata["building_role"]
+        == "power_generation"
+    )
     assert definitions.get_object("water_wheel_unit").entity_type == "su_unit"
     assert definitions.get_object("steam_engine_unit").entity_type == "su_unit"
     assert definitions.get_su_unit("steam_engine_unit").input_items == {"coal": 1}
@@ -74,7 +104,7 @@ def test_2_create_default_definitions_uses_template_loader() -> None:
         "andesite_alloy": 2,
         "iron_sheet": 1,
     }
-    assert definitions.get_object("raw_iron").category == "item"
+    assert definitions.get_object("raw_iron").category == "resource"
     assert definitions.get_producer("mine").get_level_definition(2).upgrade_cost == {
         "andesite_alloy": 8,
         "iron_sheet": 6,

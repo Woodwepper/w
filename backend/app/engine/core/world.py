@@ -6,6 +6,7 @@ from app.engine.entities.producer_building import ProducerBuilding
 from app.engine.entities.resource_node import ResourceNode
 from app.engine.entities.su_source import SUSource
 from app.engine.entities.su_source_instance import SUSourceInstance
+from app.engine.entities.su_producer_building import SUProducerBuilding
 from app.engine.definitions.game_definitions import (
     GameDefinitions,
     create_default_definitions,
@@ -23,6 +24,7 @@ class World:
     inventory: dict[str, int] = field(default_factory=dict)
 
     su_sources: list[SUSourceInstance] = field(default_factory=list)
+    su_producers: list[SUProducerBuilding] = field(default_factory=list)
     power_networks: list[PowerNetwork] = field(default_factory=list)
     factories: list[FactoryBuilding] = field(default_factory=list)
     resource_nodes: list[ResourceNode] = field(default_factory=list)
@@ -84,6 +86,22 @@ class World:
         self.su_sources.remove(su_source)
         return True
 
+    def add_su_producer(self, su_producer: SUProducerBuilding) -> None:
+        self.su_producers.append(su_producer)
+
+    def get_su_producer(self, su_producer_id: int) -> SUProducerBuilding | None:
+        for su_producer in self.su_producers:
+            if su_producer.id == su_producer_id:
+                return su_producer
+        return None
+
+    def remove_su_producer(self, su_producer_id: int) -> bool:
+        su_producer = self.get_su_producer(su_producer_id)
+        if su_producer is None:
+            return False
+        self.su_producers.remove(su_producer)
+        return True
+
     def add_power_network(self, power_network: PowerNetwork) -> None:
         self.power_networks.append(power_network)
 
@@ -143,6 +161,10 @@ class World:
                 _su_source_from_dict(item) if isinstance(item, dict) else item
                 for item in data.get("su_sources", [])
             ],
+            su_producers=[
+                SUProducerBuilding.from_dict(item) if isinstance(item, dict) else item
+                for item in data.get("su_producers", [])
+            ],
             power_networks=[
                 PowerNetwork.from_dict(item) if isinstance(item, dict) else item
                 for item in data.get("power_networks", [])
@@ -171,6 +193,7 @@ class World:
             "simulated_time": self.simulated_time,
             "inventory": dict(self.inventory),
             "su_sources": [s.to_dict() for s in self.su_sources],
+            "su_producers": [p.to_dict() for p in self.su_producers],
             "power_networks": [p.to_dict() for p in self.power_networks],
             "factories": [f.to_dict() for f in self.factories],
             "resource_nodes": [r.to_dict() for r in self.resource_nodes],

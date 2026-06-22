@@ -1,0 +1,72 @@
+{
+  "river_power_complex": {
+    "id": "river_power_complex",
+    "name": "River Power Complex",
+    "allowed_unit_types": [
+      "water_wheel_unit",
+      "gearbox_unit"
+    ],
+    "levels": {
+      "1": {
+        "level": 1,
+        "unit_slots": 6,
+        "upgrade_cost": {}
+      },
+      "2": {
+        "level": 2,
+        "unit_slots": 10,
+        "upgrade_cost": {
+          "andesite_alloy": 8,
+          "shaft": 4,
+          "cogwheel": 2
+        }
+      },
+      "3": {
+        "level": 3,
+        "unit_slots": 16,
+        "upgrade_cost": {
+          "andesite_alloy": 16,
+          "iron_sheet": 8,
+          "machine_parts": 2
+        }
+      }
+    },
+    "icon": "water_power",
+    "visual_key": "river_power_complex"
+  },
+  "steam_power_complex": {
+    "id": "steam_power_complex",
+    "name": "Steam Power Complex",
+    "allowed_unit_types": [
+      "steam_engine_unit",
+      "gearbox_unit"
+    ],
+    "levels": {
+      "1": {
+        "level": 1,
+        "unit_slots": 4,
+        "upgrade_cost": {}
+      },
+      "2": {
+        "level": 2,
+        "unit_slots": 8,
+        "upgrade_cost": {
+          "andesite_alloy": 10,
+          "iron_sheet": 10,
+          "machine_parts": 2
+        }
+      },
+      "3": {
+        "level": 3,
+        "unit_slots": 12,
+        "upgrade_cost": {
+          "andesite_alloy": 20,
+          "iron_sheet": 16,
+          "machine_parts": 4
+        }
+      }
+    },
+    "icon": "steam_power",
+    "visual_key": "steam_power_complex"
+  }
+}

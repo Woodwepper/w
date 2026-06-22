@@ -8,7 +8,9 @@ from app.engine.definitions.module_definition import ModuleDefinition
 from app.engine.definitions.producer_definition import ProducerDefinition
 from app.engine.definitions.recipe_definition import Recipe
 from app.engine.definitions.resource_node_definition import ResourceNodeDefinition
+from app.engine.definitions.su_producer_definition import SUProducerDefinition
 from app.engine.definitions.su_source_definition import SUSourceDefinition
+from app.engine.definitions.su_unit_definition import SUUnitDefinition
 
 
 class DefinitionLoadError(ValueError):
@@ -20,6 +22,8 @@ REQUIRED_TEMPLATE_FILES = {
     "modules": "modules.json",
     "recipes": "recipes.json",
     "su_sources": "su_sources.json",
+    "su_units": "su_units.json",
+    "su_producers": "su_producers.json",
     "factory_levels": "factory_levels.json",
     "resource_nodes": "resource_nodes.json",
     "producers": "producers.json",
@@ -57,6 +61,14 @@ def load_game_definitions_from_path(path: str | Path):
             source_id: SUSourceDefinition.from_dict(data)
             for source_id, data in raw_data["su_sources"].items()
         },
+        su_units={
+            unit_id: SUUnitDefinition.from_dict(data)
+            for unit_id, data in raw_data["su_units"].items()
+        },
+        su_producers={
+            producer_id: SUProducerDefinition.from_dict(data)
+            for producer_id, data in raw_data["su_producers"].items()
+        },
         factory_levels={
             int(level): FactoryLevelDefinition.from_dict(data)
             for level, data in raw_data["factory_levels"].items()
@@ -80,6 +92,8 @@ def validate_game_definitions(definitions) -> None:
     _validate_mapping_ids("module", definitions.modules)
     _validate_mapping_ids("recipe", definitions.recipes)
     _validate_mapping_ids("su_source", definitions.su_sources)
+    _validate_mapping_ids("su_unit", definitions.su_units)
+    _validate_mapping_ids("su_producer", definitions.su_producers)
     _validate_mapping_ids("resource_node", definitions.resource_nodes)
     _validate_mapping_ids("producer", definitions.producers)
     _validate_factory_levels(definitions.factory_levels)
@@ -128,6 +142,15 @@ def validate_game_definitions(definitions) -> None:
                 f"Producer {producer.id} allows unknown machine {machine_id}",
             )
         _validate_producer_levels(producer.id, producer.levels)
+
+    for su_producer in definitions.su_producers.values():
+        for unit_type in su_producer.allowed_unit_types:
+            _require_key(
+                definitions.su_units,
+                unit_type,
+                f"SU producer {su_producer.id} allows unknown SU unit {unit_type}",
+            )
+        _validate_su_producer_levels(su_producer.id, su_producer.levels)
 
 
 def _templates_root() -> Path:
@@ -194,6 +217,29 @@ def _validate_producer_levels(producer_id: str, levels: dict[int, Any]) -> None:
         if level_definition.machine_slots <= 0:
             raise DefinitionLoadError(
                 f"Producer {producer_id} level {level} must define positive machine_slots"
+            )
+
+
+def _validate_su_producer_levels(
+    producer_id: str,
+    levels: dict[int, Any],
+) -> None:
+    if not levels:
+        raise DefinitionLoadError(f"SU producer {producer_id} must define levels")
+
+    for level, level_definition in levels.items():
+        if level_definition.level != level:
+            raise DefinitionLoadError(
+                f"SU producer {producer_id} level mismatch: "
+                f"key {level} != level {level_definition.level}"
+            )
+        if level <= 0:
+            raise DefinitionLoadError(
+                f"SU producer {producer_id} level must be positive: {level}"
+            )
+        if level_definition.unit_slots <= 0:
+            raise DefinitionLoadError(
+                f"SU producer {producer_id} level {level} must define positive unit_slots"
             )
 
 

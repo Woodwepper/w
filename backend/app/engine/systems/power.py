@@ -11,6 +11,7 @@ from app.engine.core.world import World
 from app.engine.systems.producers import (
     calculate_producer_su_required as calculate_power_producer_su_required,
 )
+from app.engine.systems.su_producers import calculate_su_producer_output
 
 
 def calculate_su_source_output(
@@ -74,6 +75,12 @@ def calculate_power_source_output(
         if source is None:
             return 0
         return calculate_su_source_output(world, source)
+
+    if source_ref.source_type == "su_producer":
+        su_producer = world.get_su_producer(source_ref.source_id)
+        if su_producer is None:
+            return 0
+        return calculate_su_producer_output(world, su_producer)
 
     return 0
 

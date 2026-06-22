@@ -14,6 +14,8 @@ TEMPLATE_FILES = [
     "modules.json",
     "recipes.json",
     "su_sources.json",
+    "su_units.json",
+    "su_producers.json",
     "factory_levels.json",
     "resource_nodes.json",
     "producers.json",
@@ -36,6 +38,8 @@ def test_1_load_default_template() -> None:
     assert definitions.get_module("pressing_line") is not None
     assert definitions.get_recipe("press_iron_sheet") is not None
     assert definitions.get_su_source("water_wheel") is not None
+    assert definitions.get_su_unit("water_wheel_unit") is not None
+    assert definitions.get_su_producer("river_power_complex") is not None
     assert definitions.get_factory_level(1) is not None
     assert definitions.get_resource_node_definition("iron_deposit") is not None
     assert definitions.get_producer("mine") is not None
@@ -57,6 +61,9 @@ def test_2_create_default_definitions_uses_template_loader() -> None:
         "iron_sheet": 6,
         "shaft": 4,
     }
+    assert definitions.get_su_producer(
+        "river_power_complex"
+    ).get_level_definition(1).unit_slots == 6
 
 
 def test_3_invalid_recipe_machine_reference_fails(tmp_path: Path) -> None:
@@ -86,6 +93,10 @@ def test_4_game_definitions_roundtrip() -> None:
         "mechanical_press"
     ]
     assert restored.get_recipe("press_iron_sheet").duration == 5.0
+    assert restored.get_su_unit("water_wheel_unit").su_output == 1024
+    assert restored.get_su_producer(
+        "river_power_complex"
+    ).get_level_definition(1).unit_slots == 6
     assert restored.get_factory_level(1).module_slots == 2
     assert restored.get_resource_node_definition("iron_deposit").resource_type == "raw_iron"
     assert restored.get_producer("mine").get_level_definition(1).machine_slots == 2

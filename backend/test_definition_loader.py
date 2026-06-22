@@ -51,6 +51,20 @@ def test_1_load_default_template() -> None:
         "mechanical_drill"
     ]
     assert definitions.get_producer("mine").get_level_definition(1).machine_slots == 2
+    assert definitions.get_object("mine").entity_type == "producer"
+    assert definitions.get_object("river_power_complex").entity_type == "su_producer"
+    assert definitions.get_object("water_wheel_unit").entity_type == "su_unit"
+    assert definitions.get_object("steam_engine_unit").entity_type == "su_unit"
+    assert definitions.get_su_unit("steam_engine_unit").input_items == {"coal": 1}
+
+    for machine_id in definitions.machines:
+        assert definitions.get_object(machine_id).entity_type == "machine"
+    for producer_id in definitions.producers:
+        assert definitions.get_object(producer_id).entity_type == "producer"
+    for su_producer_id in definitions.su_producers:
+        assert definitions.get_object(su_producer_id).entity_type == "su_producer"
+    for su_unit_id in definitions.su_units:
+        assert definitions.get_object(su_unit_id).entity_type == "su_unit"
 
 
 def test_2_create_default_definitions_uses_template_loader() -> None:
@@ -89,7 +103,25 @@ def test_3_invalid_recipe_machine_reference_fails(tmp_path: Path) -> None:
         raise AssertionError("Expected DefinitionLoadError")
 
 
-def test_4_invalid_entity_object_reference_fails(tmp_path: Path) -> None:
+def test_4_invalid_recipe_item_reference_fails(tmp_path: Path) -> None:
+    source = DEFAULT_TEMPLATE_PATH
+    target = tmp_path / "bad_recipe_item_template"
+    copy_template(source, target)
+
+    recipes_path = target / "recipes.json"
+    recipes = json.loads(recipes_path.read_text(encoding="utf-8"))
+    recipes["press_iron_sheet"]["input_items"] = {"missing_item": 1}
+    recipes_path.write_text(json.dumps(recipes), encoding="utf-8")
+
+    try:
+        load_game_definitions_from_path(target)
+    except DefinitionLoadError as exc:
+        assert "uses unknown object missing_item" in str(exc)
+    else:
+        raise AssertionError("Expected DefinitionLoadError")
+
+
+def test_5_invalid_entity_object_reference_fails(tmp_path: Path) -> None:
     source = DEFAULT_TEMPLATE_PATH
     target = tmp_path / "bad_object_template"
     copy_template(source, target)
@@ -107,7 +139,7 @@ def test_4_invalid_entity_object_reference_fails(tmp_path: Path) -> None:
         raise AssertionError("Expected DefinitionLoadError")
 
 
-def test_5_invalid_resource_node_output_fails(tmp_path: Path) -> None:
+def test_6_invalid_resource_node_output_fails(tmp_path: Path) -> None:
     source = DEFAULT_TEMPLATE_PATH
     target = tmp_path / "bad_resource_template"
     copy_template(source, target)
@@ -125,7 +157,68 @@ def test_5_invalid_resource_node_output_fails(tmp_path: Path) -> None:
         raise AssertionError("Expected DefinitionLoadError")
 
 
-def test_6_game_definitions_roundtrip() -> None:
+def test_7_missing_object_definition_for_definition_fails(tmp_path: Path) -> None:
+    cases = [
+        ("objects_missing_machine", "mechanical_press", "MachineDefinition"),
+        ("objects_missing_producer", "mine", "ProducerDefinition"),
+        ("objects_missing_su_producer", "river_power_complex", "SUProducerDefinition"),
+        ("objects_missing_su_unit", "water_wheel_unit", "SUUnitDefinition"),
+    ]
+
+    for folder_name, object_id, label in cases:
+        target = tmp_path / folder_name
+        copy_template(DEFAULT_TEMPLATE_PATH, target)
+        objects_path = target / "objects.json"
+        objects = json.loads(objects_path.read_text(encoding="utf-8"))
+        objects.pop(object_id)
+        objects_path.write_text(json.dumps(objects), encoding="utf-8")
+
+        try:
+            load_game_definitions_from_path(target)
+        except DefinitionLoadError as exc:
+            assert f"Missing ObjectDefinition for {label} '{object_id}'" in str(exc)
+        else:
+            raise AssertionError("Expected DefinitionLoadError")
+
+
+def test_8_wrong_entity_type_fails(tmp_path: Path) -> None:
+    target = tmp_path / "wrong_entity_type"
+    copy_template(DEFAULT_TEMPLATE_PATH, target)
+
+    objects_path = target / "objects.json"
+    objects = json.loads(objects_path.read_text(encoding="utf-8"))
+    objects["mechanical_press"]["entity_type"] = "producer"
+    objects_path.write_text(json.dumps(objects), encoding="utf-8")
+
+    try:
+        load_game_definitions_from_path(target)
+    except DefinitionLoadError as exc:
+        assert (
+            "ObjectDefinition 'mechanical_press' has entity_type "
+            "'producer' but expected 'machine'"
+        ) in str(exc)
+    else:
+        raise AssertionError("Expected DefinitionLoadError")
+
+
+def test_9_unsupported_entity_type_fails(tmp_path: Path) -> None:
+    target = tmp_path / "unsupported_entity_type"
+    copy_template(DEFAULT_TEMPLATE_PATH, target)
+
+    objects_path = target / "objects.json"
+    objects = json.loads(objects_path.read_text(encoding="utf-8"))
+    objects["mechanical_press"]["entity_type"] = "mystery"
+    objects_path.write_text(json.dumps(objects), encoding="utf-8")
+
+    try:
+        load_game_definitions_from_path(target)
+    except DefinitionLoadError as exc:
+        assert "Unsupported entity_type 'mystery'" in str(exc)
+    else:
+        raise AssertionError("Expected DefinitionLoadError")
+
+
+def test_10_game_definitions_roundtrip() -> None:
     definitions = load_game_definitions_from_template("default")
     restored = type(definitions).from_dict(definitions.to_dict())
 
@@ -136,6 +229,7 @@ def test_6_game_definitions_roundtrip() -> None:
     ]
     assert restored.get_recipe("press_iron_sheet").duration == 5.0
     assert restored.get_su_unit("water_wheel_unit").su_output == 1024
+    assert restored.get_object("steam_engine_unit").entity_type == "su_unit"
     assert restored.get_su_producer(
         "river_power_complex"
     ).get_level_definition(1).unit_slots == 6
@@ -150,7 +244,7 @@ TESTS = [
         "Test 2: create_default_definitions usa loader",
         test_2_create_default_definitions_uses_template_loader,
     ),
-    ("Test 6: GameDefinitions roundtrip", test_6_game_definitions_roundtrip),
+    ("Test 10: GameDefinitions roundtrip", test_10_game_definitions_roundtrip),
 ]
 
 
@@ -179,23 +273,59 @@ def main() -> int:
 
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
-            test_4_invalid_entity_object_reference_fails(Path(temp_dir))
+            test_4_invalid_recipe_item_reference_fails(Path(temp_dir))
     except AssertionError as exc:
-        failures.append(("Test 4: objeto entidad invalido falla", str(exc)))
-        print("FAIL - Test 4: objeto entidad invalido falla")
+        failures.append(("Test 4: recipe item invalido falla", str(exc)))
+        print("FAIL - Test 4: recipe item invalido falla")
     else:
-        print("PASS - Test 4: objeto entidad invalido falla")
+        print("PASS - Test 4: recipe item invalido falla")
 
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
-            test_5_invalid_resource_node_output_fails(Path(temp_dir))
+            test_5_invalid_entity_object_reference_fails(Path(temp_dir))
     except AssertionError as exc:
-        failures.append(("Test 5: resource node output invalido falla", str(exc)))
-        print("FAIL - Test 5: resource node output invalido falla")
+        failures.append(("Test 5: objeto entidad invalido falla", str(exc)))
+        print("FAIL - Test 5: objeto entidad invalido falla")
     else:
-        print("PASS - Test 5: resource node output invalido falla")
+        print("PASS - Test 5: objeto entidad invalido falla")
 
-    total = len(TESTS) + 3
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_6_invalid_resource_node_output_fails(Path(temp_dir))
+    except AssertionError as exc:
+        failures.append(("Test 6: resource node output invalido falla", str(exc)))
+        print("FAIL - Test 6: resource node output invalido falla")
+    else:
+        print("PASS - Test 6: resource node output invalido falla")
+
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_7_missing_object_definition_for_definition_fails(Path(temp_dir))
+    except AssertionError as exc:
+        failures.append(("Test 7: ObjectDefinition faltante falla", str(exc)))
+        print("FAIL - Test 7: ObjectDefinition faltante falla")
+    else:
+        print("PASS - Test 7: ObjectDefinition faltante falla")
+
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_8_wrong_entity_type_fails(Path(temp_dir))
+    except AssertionError as exc:
+        failures.append(("Test 8: entity_type incorrecto falla", str(exc)))
+        print("FAIL - Test 8: entity_type incorrecto falla")
+    else:
+        print("PASS - Test 8: entity_type incorrecto falla")
+
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            test_9_unsupported_entity_type_fails(Path(temp_dir))
+    except AssertionError as exc:
+        failures.append(("Test 9: entity_type no soportado falla", str(exc)))
+        print("FAIL - Test 9: entity_type no soportado falla")
+    else:
+        print("PASS - Test 9: entity_type no soportado falla")
+
+    total = len(TESTS) + 7
     print(f"\nResult: {total - len(failures)}/{total} tests passed")
 
     if failures:

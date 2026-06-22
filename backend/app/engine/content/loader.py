@@ -17,6 +17,14 @@ class DefinitionLoadError(ValueError):
     pass
 
 
+SUPPORTED_ENTITY_TYPES = {
+    "machine",
+    "producer",
+    "su_producer",
+    "su_unit",
+}
+
+
 REQUIRED_TEMPLATE_FILES = {
     "machines": "machines.json",
     "objects": "objects.json",
@@ -97,6 +105,7 @@ def validate_game_definitions(definitions) -> None:
     _validate_mapping_ids("resource_node", definitions.resource_nodes)
     _validate_mapping_ids("producer", definitions.producers)
     _validate_factory_levels(definitions.factory_levels)
+    _validate_definition_objects(definitions)
     _validate_object_definitions(definitions)
 
     for recipe in definitions.recipes.values():
@@ -304,13 +313,6 @@ def _validate_su_producer_levels(
 
 
 def _validate_object_definitions(definitions) -> None:
-    supported_entity_types = {
-        "machine",
-        "producer",
-        "su_producer",
-        "su_unit",
-    }
-
     for object_id, object_definition in definitions.objects.items():
         if object_definition.stack_kind == "normal":
             if object_definition.entity_type is not None:
@@ -331,9 +333,9 @@ def _validate_object_definitions(definitions) -> None:
             raise DefinitionLoadError(
                 f"Object {object_id} is entity but has no entity_type"
             )
-        if entity_type not in supported_entity_types:
+        if entity_type not in SUPPORTED_ENTITY_TYPES:
             raise DefinitionLoadError(
-                f"Object {object_id} declares unsupported entity_type {entity_type}"
+                f"Unsupported entity_type '{entity_type}'"
             )
 
         if entity_type == "machine":
@@ -359,6 +361,57 @@ def _validate_object_definitions(definitions) -> None:
                 definitions.su_units,
                 object_id,
                 f"Object {object_id} declares entity_type su_unit but no SUUnitDefinition exists",
+            )
+
+
+def _validate_definition_objects(definitions) -> None:
+    _validate_definitions_have_objects(
+        definitions,
+        definitions.machines,
+        "MachineDefinition",
+        "machine",
+    )
+    _validate_definitions_have_objects(
+        definitions,
+        definitions.producers,
+        "ProducerDefinition",
+        "producer",
+    )
+    _validate_definitions_have_objects(
+        definitions,
+        definitions.su_producers,
+        "SUProducerDefinition",
+        "su_producer",
+    )
+    _validate_definitions_have_objects(
+        definitions,
+        definitions.su_units,
+        "SUUnitDefinition",
+        "su_unit",
+    )
+
+
+def _validate_definitions_have_objects(
+    definitions,
+    items: dict[str, Any],
+    definition_label: str,
+    expected_entity_type: str,
+) -> None:
+    for item_id in items:
+        object_definition = definitions.get_object(item_id)
+        if object_definition is None:
+            raise DefinitionLoadError(
+                f"Missing ObjectDefinition for {definition_label} '{item_id}'"
+            )
+        if object_definition.entity_type not in SUPPORTED_ENTITY_TYPES:
+            raise DefinitionLoadError(
+                f"Unsupported entity_type '{object_definition.entity_type}'"
+            )
+        if object_definition.entity_type != expected_entity_type:
+            raise DefinitionLoadError(
+                f"ObjectDefinition '{item_id}' has entity_type "
+                f"'{object_definition.entity_type}' but expected "
+                f"'{expected_entity_type}'"
             )
 
 

@@ -160,6 +160,14 @@ def test_flow_d_steam_su_producer_consumes_input_once_per_tick() -> None:
     assert su_producer.status == SUProducerStatus.ACTIVE
     assert su_producer.get_input_amount("coal") == 1
 
+    tick(world, 1)
+    assert su_producer.status == SUProducerStatus.ACTIVE
+    assert su_producer.get_input_amount("coal") == 0
+
+    tick(world, 1)
+    assert su_producer.status == SUProducerStatus.MISSING_INPUT
+    assert su_producer.get_input_amount("coal") == 0
+
 
 def test_flow_e_save_load_keeps_definitions_and_continues() -> None:
     world = World(id=1, name="Save Flow")

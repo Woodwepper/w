@@ -234,6 +234,162 @@ def network_has_consumer(
     ) in network.consumers
 
 
+def get_world_counts(world: World) -> dict:
+    return {
+        "factories": len(world.factories),
+        "producers": len(world.producers),
+        "su_sources": len(world.su_sources),
+        "su_producers": len(world.su_producers),
+        "resource_nodes": len(world.resource_nodes),
+        "power_networks": len(world.power_networks),
+    }
+
+
+def get_power_summary(world: World) -> dict:
+    return {
+        "su_produced": world.su_produced,
+        "su_required": world.su_required,
+        "su_available": world.su_available,
+    }
+
+
+def summarize_positioned_entity(kind: str, entity) -> dict:
+    return {
+        "kind": kind,
+        "id": entity.id,
+        "name": entity.name,
+        "x": getattr(entity, "x", 0),
+        "y": getattr(entity, "y", 0),
+        "status": getattr(getattr(entity, "status", None), "value", getattr(entity, "status", None)),
+    }
+
+
+def get_factory_detail_payload(world: World, factory: FactoryBuilding) -> dict:
+    payload = factory.to_dict()
+    payload["level_definition"] = (
+        factory.get_level_definition(world.definitions).to_dict()
+        if factory.get_level_definition(world.definitions) is not None
+        else None
+    )
+    payload["module_details"] = []
+
+    for module in factory.modules:
+        module_definition = world.definitions.get_module(module.module_type)
+        module_payload = module.to_dict()
+        module_payload["definition"] = (
+            module_definition.to_dict()
+            if module_definition is not None
+            else None
+        )
+        module_payload["active_recipe_definition"] = (
+            world.definitions.get_recipe(module.active_recipe).to_dict()
+            if module.active_recipe is not None
+            and world.definitions.get_recipe(module.active_recipe) is not None
+            else None
+        )
+        module_payload["machine_details"] = [
+            {
+                "instance": machine.to_dict(),
+                "definition": (
+                    world.definitions.get_machine(machine.machine_type).to_dict()
+                    if world.definitions.get_machine(machine.machine_type) is not None
+                    else None
+                ),
+            }
+            for machine in module.installed_machines
+        ]
+        payload["module_details"].append(module_payload)
+
+    return payload
+
+
+def get_producer_detail_payload(world: World, producer: ProducerBuilding) -> dict:
+    producer_definition = world.definitions.get_producer(producer.producer_type)
+    resource_node = world.get_resource_node(producer.resource_node_id)
+    payload = producer.to_dict()
+    payload["definition"] = (
+        producer_definition.to_dict()
+        if producer_definition is not None
+        else None
+    )
+    payload["resource_node"] = (
+        resource_node.to_dict()
+        if resource_node is not None
+        else None
+    )
+    payload["machine_details"] = [
+        {
+            "instance": machine.to_dict(),
+            "definition": (
+                world.definitions.get_machine(machine.machine_type).to_dict()
+                if world.definitions.get_machine(machine.machine_type) is not None
+                else None
+            ),
+        }
+        for machine in producer.installed_machines
+    ]
+    return payload
+
+
+def get_su_producer_detail_payload(world: World, su_producer: SUProducerBuilding) -> dict:
+    producer_definition = world.definitions.get_su_producer(su_producer.producer_type)
+    payload = su_producer.to_dict()
+    payload["definition"] = (
+        producer_definition.to_dict()
+        if producer_definition is not None
+        else None
+    )
+    payload["unit_details"] = [
+        {
+            "unit_type": unit_type,
+            "amount": amount,
+            "definition": (
+                world.definitions.get_su_unit(unit_type).to_dict()
+                if world.definitions.get_su_unit(unit_type) is not None
+                else None
+            ),
+        }
+        for unit_type, amount in su_producer.installed_units.items()
+    ]
+    return payload
+
+
+def get_power_network_detail_payload(world: World, network: PowerNetwork) -> dict:
+    payload = network.to_dict()
+    payload["resolved_sources"] = []
+    payload["resolved_consumers"] = []
+
+    for source in network.sources:
+        if source.source_type == "su_source":
+            entity = world.get_su_source(source.source_id)
+        elif source.source_type == "su_producer":
+            entity = world.get_su_producer(source.source_id)
+        else:
+            entity = None
+        payload["resolved_sources"].append(
+            {
+                "ref": source.to_dict(),
+                "entity": entity.to_dict() if entity is not None else None,
+            }
+        )
+
+    for consumer in network.consumers:
+        if consumer.consumer_type == "factory":
+            entity = world.get_factory(consumer.consumer_id)
+        elif consumer.consumer_type == "producer":
+            entity = world.get_producer(consumer.consumer_id)
+        else:
+            entity = None
+        payload["resolved_consumers"].append(
+            {
+                "ref": consumer.to_dict(),
+                "entity": entity.to_dict() if entity is not None else None,
+            }
+        )
+
+    return payload
+
+
 @router.post("/worlds")
 def create_world(request: CreateWorldRequest):
     world = memory_store.create_world(request.name)
@@ -254,6 +410,64 @@ def list_worlds():
 def get_world_state(world_id: int):
     world = memory_store.get_world_or_404(world_id)
     return world.to_dict()
+
+
+@router.get("/worlds/{world_id}/overview")
+def get_world_overview(world_id: int):
+    world = memory_store.get_world_or_404(world_id)
+    return {
+        "id": world.id,
+        "name": world.name,
+        "simulated_time": world.simulated_time,
+        "power": get_power_summary(world),
+        "counts": get_world_counts(world),
+        "inventory": world.inventory.to_dict(),
+        "factories": [
+            summarize_positioned_entity("factory", factory)
+            for factory in world.factories
+        ],
+        "producers": [
+            summarize_positioned_entity("producer", producer)
+            for producer in world.producers
+        ],
+        "su_producers": [
+            summarize_positioned_entity("su_producer", su_producer)
+            for su_producer in world.su_producers
+        ],
+    }
+
+
+@router.get("/worlds/{world_id}/map")
+def get_world_map(world_id: int):
+    world = memory_store.get_world_or_404(world_id)
+    return {
+        "nodes": (
+            [
+                summarize_positioned_entity("factory", factory)
+                for factory in world.factories
+            ]
+            + [
+                summarize_positioned_entity("producer", producer)
+                for producer in world.producers
+            ]
+            + [
+                summarize_positioned_entity("su_source", source)
+                for source in world.su_sources
+            ]
+            + [
+                summarize_positioned_entity("su_producer", su_producer)
+                for su_producer in world.su_producers
+            ]
+            + [
+                summarize_positioned_entity("resource_node", resource_node)
+                for resource_node in world.resource_nodes
+            ]
+        ),
+        "power_networks": [
+            get_power_network_detail_payload(world, network)
+            for network in world.power_networks
+        ],
+    }
 
 
 @router.post("/worlds/{world_id}/tick")
@@ -528,6 +742,16 @@ def get_producer(
     return producer.to_dict()
 
 
+@router.get("/worlds/{world_id}/producers/{producer_id}/detail")
+def get_producer_detail(
+    world_id: int,
+    producer_id: int,
+):
+    world = memory_store.get_world_or_404(world_id)
+    producer = memory_store.get_producer_or_404(world, producer_id)
+    return get_producer_detail_payload(world, producer)
+
+
 @router.post("/worlds/{world_id}/producers/{producer_id}/level-up")
 def level_up_producer(
     world_id: int,
@@ -688,6 +912,16 @@ def get_factory(
     world = memory_store.get_world_or_404(world_id)
     factory = memory_store.get_factory_or_404(world, factory_id)
     return factory.to_dict()
+
+
+@router.get("/worlds/{world_id}/factories/{factory_id}/detail")
+def get_factory_detail(
+    world_id: int,
+    factory_id: int,
+):
+    world = memory_store.get_world_or_404(world_id)
+    factory = memory_store.get_factory_or_404(world, factory_id)
+    return get_factory_detail_payload(world, factory)
 
 
 @router.patch("/worlds/{world_id}/factories/{factory_id}")
@@ -1010,6 +1244,16 @@ def get_su_producer(
     return su_producer.to_dict()
 
 
+@router.get("/worlds/{world_id}/su-producers/{su_producer_id}/detail")
+def get_su_producer_detail(
+    world_id: int,
+    su_producer_id: int,
+):
+    world = memory_store.get_world_or_404(world_id)
+    su_producer = memory_store.get_su_producer_or_404(world, su_producer_id)
+    return get_su_producer_detail_payload(world, su_producer)
+
+
 @router.delete("/worlds/{world_id}/su-producers/{su_producer_id}")
 def delete_su_producer(
     world_id: int,
@@ -1127,6 +1371,16 @@ def get_power_network(
     world = memory_store.get_world_or_404(world_id)
     power_network = memory_store.get_power_network_or_404(world, network_id)
     return power_network.to_dict()
+
+
+@router.get("/worlds/{world_id}/power-networks/{network_id}/detail")
+def get_power_network_detail(
+    world_id: int,
+    network_id: int,
+):
+    world = memory_store.get_world_or_404(world_id)
+    power_network = memory_store.get_power_network_or_404(world, network_id)
+    return get_power_network_detail_payload(world, power_network)
 
 
 @router.delete("/worlds/{world_id}/power-networks/{network_id}")

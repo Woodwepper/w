@@ -1,17 +1,9 @@
 from dataclasses import dataclass, field
 
-from app.engine.content.factory_level_definitions import FACTORY_LEVEL_DEFINITIONS
-from app.engine.content.machine_definitions import MACHINE_DEFINITIONS
-from app.engine.content.module_definitions import MODULE_DEFINITIONS
-from app.engine.content.producer_definitions import PRODUCER_DEFINITIONS
-from app.engine.content.recipe_definitions import RECIPES
-from app.engine.content.resource_node_definitions import RESOURCE_NODE_DEFINITIONS
-from app.engine.content.su_source_definitions import SU_SOURCE_DEFINITIONS
 from app.engine.definitions.factory_level_definition import FactoryLevelDefinition
 from app.engine.definitions.machine_definition import MachineDefinition
 from app.engine.definitions.module_definition import ModuleDefinition
 from app.engine.definitions.producer_definition import ProducerDefinition
-from app.engine.definitions.producer_level_definition import ProducerLevelDefinition
 from app.engine.definitions.recipe_definition import Recipe
 from app.engine.definitions.resource_node_definition import ResourceNodeDefinition
 from app.engine.definitions.su_source_definition import SUSourceDefinition
@@ -53,68 +45,6 @@ class GameDefinitions:
 
 
 def create_default_definitions() -> GameDefinitions:
-    machines = {
-        machine_id: MachineDefinition(
-            id=machine.id,
-            name=machine.name,
-            su_cost=machine.su_cost,
-            allowed_recipes=[
-                recipe.id
-                for recipe in RECIPES.values()
-                if machine_id in recipe.required_machines
-            ],
-            build_cost=dict(machine.build_cost),
-            upgrade_costs={
-                level: dict(cost)
-                for level, cost in machine.upgrade_costs.items()
-            },
-            speed_multipliers=dict(machine.speed_multipliers) or {1: 1.0},
-            icon=machine.icon,
-            visual_key=machine.visual_key,
-        )
-        for machine_id, machine in MACHINE_DEFINITIONS.items()
-    }
+    from app.engine.content.loader import load_game_definitions_from_template
 
-    modules = {
-        module_id: ModuleDefinition(
-            id=module.id,
-            name=module.name,
-            allowed_recipes=list(module.allowed_recipes),
-            allowed_machine_types=list(module.allowed_machine_types),
-            icon=module.icon,
-            visual_key=module.visual_key,
-        )
-        for module_id, module in MODULE_DEFINITIONS.items()
-    }
-
-    producers = {
-        producer_id: ProducerDefinition(
-            id=producer.id,
-            name=producer.name,
-            allowed_node_types=list(producer.allowed_node_types),
-            allowed_machine_types=list(producer.allowed_machine_types),
-            base_duration=producer.base_duration,
-            base_output_amount=producer.base_output_amount,
-            levels={
-                level: ProducerLevelDefinition(
-                    level=level_definition.level,
-                    machine_slots=level_definition.machine_slots,
-                    upgrade_cost=dict(level_definition.upgrade_cost),
-                )
-                for level, level_definition in producer.levels.items()
-            },
-            icon=producer.icon,
-            visual_key=producer.visual_key,
-        )
-        for producer_id, producer in PRODUCER_DEFINITIONS.items()
-    }
-
-    return GameDefinitions(
-        machines=machines,
-        modules=modules,
-        recipes=dict(RECIPES),
-        su_sources=dict(SU_SOURCE_DEFINITIONS),
-        factory_levels=dict(FACTORY_LEVEL_DEFINITIONS),
-        resource_nodes=dict(RESOURCE_NODE_DEFINITIONS),
-        producers=producers,
-    )
+    return load_game_definitions_from_template("default")

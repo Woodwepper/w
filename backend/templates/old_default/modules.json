@@ -1,0 +1,83 @@
+{
+  "pressing_line": {
+    "id": "pressing_line",
+    "name": "Pressing Line",
+    "allowed_recipes": [
+      "press_iron_sheet",
+      "press_copper_sheet",
+      "press_iron_plate",
+      "press_copper_plate",
+      "press_iron_bolt",
+      "press_copper_wire"
+    ],
+    "allowed_machine_types": [
+      "mechanical_press"
+    ],
+    "icon": "press",
+    "visual_key": "pressing_line"
+  },
+  "crushing_line": {
+    "id": "crushing_line",
+    "name": "Crushing Line",
+    "allowed_recipes": [
+      "crush_raw_iron",
+      "crush_raw_copper",
+      "crush_stone",
+      "crush_gravel",
+      "crush_andesite"
+    ],
+    "allowed_machine_types": [
+      "crushing_wheel"
+    ],
+    "icon": "crusher",
+    "visual_key": "crushing_line"
+  },
+  "smelting_line": {
+    "id": "smelting_line",
+    "name": "Smelting Line",
+    "allowed_recipes": [
+      "smelt_crushed_iron",
+      "smelt_crushed_copper",
+      "smelt_sand_to_glass",
+      "smelt_clay_to_brick",
+      "smelt_cobblestone"
+    ],
+    "allowed_machine_types": [
+      "mechanical_smelter"
+    ],
+    "icon": "smelter",
+    "visual_key": "smelting_line"
+  },
+  "mixing_line": {
+    "id": "mixing_line",
+    "name": "Mixing Line",
+    "allowed_recipes": [
+      "mix_andesite_alloy",
+      "mix_conductive_alloy",
+      "mix_construction_blend",
+      "mix_industrial_compound",
+      "mix_machine_base"
+    ],
+    "allowed_machine_types": [
+      "mechanical_mixer"
+    ],
+    "icon": "mixer",
+    "visual_key": "mixing_line"
+  },
+  "assembling_line": {
+    "id": "assembling_line",
+    "name": "Assembling Line",
+    "allowed_recipes": [
+      "assemble_shaft",
+      "assemble_cogwheel",
+      "assemble_large_cogwheel",
+      "assemble_machine_parts",
+      "assemble_basic_mechanism"
+    ],
+    "allowed_machine_types": [
+      "mechanical_assembler"
+    ],
+    "icon": "assembler",
+    "visual_key": "assembling_line"
+  }
+}

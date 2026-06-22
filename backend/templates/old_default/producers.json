@@ -1,0 +1,160 @@
+{
+  "mine": {
+    "id": "mine",
+    "name": "Mine",
+    "allowed_node_types": [
+      "iron_deposit",
+      "copper_deposit",
+      "coal_vein"
+    ],
+    "allowed_machine_types": [
+      "mechanical_drill"
+    ],
+    "base_duration": 5.0,
+    "base_output_amount": 1,
+    "levels": {
+      "1": {
+        "level": 1,
+        "machine_slots": 2,
+        "upgrade_cost": {}
+      },
+      "2": {
+        "level": 2,
+        "machine_slots": 4,
+        "upgrade_cost": {
+          "andesite_alloy": 8,
+          "iron_sheet": 6,
+          "shaft": 4
+        }
+      },
+      "3": {
+        "level": 3,
+        "machine_slots": 6,
+        "upgrade_cost": {
+          "andesite_alloy": 16,
+          "iron_sheet": 12,
+          "machine_parts": 2
+        }
+      }
+    },
+    "icon": "mine",
+    "visual_key": "mine"
+  },
+  "quarry": {
+    "id": "quarry",
+    "name": "Quarry",
+    "allowed_node_types": [
+      "stone_outcrop"
+    ],
+    "allowed_machine_types": [
+      "mechanical_drill"
+    ],
+    "base_duration": 5.0,
+    "base_output_amount": 1,
+    "levels": {
+      "1": {
+        "level": 1,
+        "machine_slots": 2,
+        "upgrade_cost": {}
+      },
+      "2": {
+        "level": 2,
+        "machine_slots": 4,
+        "upgrade_cost": {
+          "andesite_alloy": 8,
+          "iron_sheet": 6,
+          "shaft": 4
+        }
+      },
+      "3": {
+        "level": 3,
+        "machine_slots": 6,
+        "upgrade_cost": {
+          "andesite_alloy": 16,
+          "iron_sheet": 12,
+          "machine_parts": 2
+        }
+      }
+    },
+    "icon": "quarry",
+    "visual_key": "quarry"
+  },
+  "lumber_camp": {
+    "id": "lumber_camp",
+    "name": "Lumber Camp",
+    "allowed_node_types": [
+      "forest"
+    ],
+    "allowed_machine_types": [
+      "mechanical_saw"
+    ],
+    "base_duration": 6.0,
+    "base_output_amount": 1,
+    "levels": {
+      "1": {
+        "level": 1,
+        "machine_slots": 2,
+        "upgrade_cost": {}
+      },
+      "2": {
+        "level": 2,
+        "machine_slots": 4,
+        "upgrade_cost": {
+          "andesite_alloy": 8,
+          "iron_sheet": 6,
+          "shaft": 4
+        }
+      },
+      "3": {
+        "level": 3,
+        "machine_slots": 6,
+        "upgrade_cost": {
+          "andesite_alloy": 16,
+          "iron_sheet": 12,
+          "machine_parts": 2
+        }
+      }
+    },
+    "icon": "lumber",
+    "visual_key": "lumber_camp"
+  },
+  "water_pump": {
+    "id": "water_pump",
+    "name": "Water Pump",
+    "allowed_node_types": [
+      "water_source"
+    ],
+    "allowed_machine_types": [
+      "mechanical_pump"
+    ],
+    "base_duration": 4.0,
+    "base_output_amount": 1,
+    "levels": {
+      "1": {
+        "level": 1,
+        "machine_slots": 2,
+        "upgrade_cost": {}
+      },
+      "2": {
+        "level": 2,
+        "machine_slots": 4,
+        "upgrade_cost": {
+          "andesite_alloy": 8,
+          "iron_sheet": 6,
+          "shaft": 4
+        }
+      },
+      "3": {
+        "level": 3,
+        "machine_slots": 6,
+        "upgrade_cost": {
+          "andesite_alloy": 16,
+          "iron_sheet": 12,
+          "machine_parts": 2
+        }
+      }
+    },
+    "icon": "pump",
+    "visual_key": "water_pump"
+  }
+}

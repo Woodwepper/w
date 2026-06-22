@@ -1,0 +1,376 @@
+{
+  "press_iron_sheet": {
+    "id": "press_iron_sheet",
+    "name": "Press Iron Sheet",
+    "required_machines": [
+      "mechanical_press"
+    ],
+    "input_items": {
+      "iron_ingot": 1
+    },
+    "output_items": {
+      "iron_sheet": 1
+    },
+    "duration": 5.0
+  },
+  "press_copper_sheet": {
+    "id": "press_copper_sheet",
+    "name": "Press Copper Sheet",
+    "required_machines": [
+      "mechanical_press"
+    ],
+    "input_items": {
+      "copper_ingot": 1
+    },
+    "output_items": {
+      "copper_sheet": 1
+    },
+    "duration": 5.0
+  },
+  "press_iron_plate": {
+    "id": "press_iron_plate",
+    "name": "Press Iron Plate",
+    "required_machines": [
+      "mechanical_press"
+    ],
+    "input_items": {
+      "iron_sheet": 1
+    },
+    "output_items": {
+      "iron_plate": 1
+    },
+    "duration": 5.0
+  },
+  "press_copper_plate": {
+    "id": "press_copper_plate",
+    "name": "Press Copper Plate",
+    "required_machines": [
+      "mechanical_press"
+    ],
+    "input_items": {
+      "copper_sheet": 1
+    },
+    "output_items": {
+      "copper_plate": 1
+    },
+    "duration": 5.0
+  },
+  "press_iron_bolt": {
+    "id": "press_iron_bolt",
+    "name": "Press Iron Bolt",
+    "required_machines": [
+      "mechanical_press"
+    ],
+    "input_items": {
+      "iron_plate": 1
+    },
+    "output_items": {
+      "iron_bolt": 2
+    },
+    "duration": 5.0
+  },
+  "press_copper_wire": {
+    "id": "press_copper_wire",
+    "name": "Press Copper Wire",
+    "required_machines": [
+      "mechanical_press"
+    ],
+    "input_items": {
+      "copper_plate": 1
+    },
+    "output_items": {
+      "copper_wire": 2
+    },
+    "duration": 5.0
+  },
+  "crush_raw_iron": {
+    "id": "crush_raw_iron",
+    "name": "Crush Raw Iron",
+    "required_machines": [
+      "crushing_wheel"
+    ],
+    "input_items": {
+      "raw_iron": 1
+    },
+    "output_items": {
+      "crushed_iron": 1
+    },
+    "duration": 5.0
+  },
+  "crush_raw_copper": {
+    "id": "crush_raw_copper",
+    "name": "Crush Raw Copper",
+    "required_machines": [
+      "crushing_wheel"
+    ],
+    "input_items": {
+      "raw_copper": 1
+    },
+    "output_items": {
+      "crushed_copper": 1
+    },
+    "duration": 5.0
+  },
+  "crush_stone": {
+    "id": "crush_stone",
+    "name": "Crush Stone",
+    "required_machines": [
+      "crushing_wheel"
+    ],
+    "input_items": {
+      "stone": 1
+    },
+    "output_items": {
+      "gravel": 1
+    },
+    "duration": 5.0
+  },
+  "crush_gravel": {
+    "id": "crush_gravel",
+    "name": "Crush Gravel",
+    "required_machines": [
+      "crushing_wheel"
+    ],
+    "input_items": {
+      "gravel": 1
+    },
+    "output_items": {
+      "sand": 1
+    },
+    "duration": 5.0
+  },
+  "crush_andesite": {
+    "id": "crush_andesite",
+    "name": "Crush Andesite",
+    "required_machines": [
+      "crushing_wheel"
+    ],
+    "input_items": {
+      "andesite": 1
+    },
+    "output_items": {
+      "crushed_andesite": 1
+    },
+    "duration": 5.0
+  },
+  "smelt_crushed_iron": {
+    "id": "smelt_crushed_iron",
+    "name": "Smelt Crushed Iron",
+    "required_machines": [
+      "mechanical_smelter"
+    ],
+    "input_items": {
+      "crushed_iron": 1
+    },
+    "output_items": {
+      "iron_ingot": 1
+    },
+    "duration": 5.0
+  },
+  "smelt_crushed_copper": {
+    "id": "smelt_crushed_copper",
+    "name": "Smelt Crushed Copper",
+    "required_machines": [
+      "mechanical_smelter"
+    ],
+    "input_items": {
+      "crushed_copper": 1
+    },
+    "output_items": {
+      "copper_ingot": 1
+    },
+    "duration": 5.0
+  },
+  "smelt_sand_to_glass": {
+    "id": "smelt_sand_to_glass",
+    "name": "Smelt Sand To Glass",
+    "required_machines": [
+      "mechanical_smelter"
+    ],
+    "input_items": {
+      "sand": 1
+    },
+    "output_items": {
+      "glass": 1
+    },
+    "duration": 5.0
+  },
+  "smelt_clay_to_brick": {
+    "id": "smelt_clay_to_brick",
+    "name": "Smelt Clay To Brick",
+    "required_machines": [
+      "mechanical_smelter"
+    ],
+    "input_items": {
+      "clay": 1
+    },
+    "output_items": {
+      "brick": 1
+    },
+    "duration": 5.0
+  },
+  "smelt_cobblestone": {
+    "id": "smelt_cobblestone",
+    "name": "Smelt Cobblestone",
+    "required_machines": [
+      "mechanical_smelter"
+    ],
+    "input_items": {
+      "cobblestone": 1
+    },
+    "output_items": {
+      "stone": 1
+    },
+    "duration": 5.0
+  },
+  "mix_andesite_alloy": {
+    "id": "mix_andesite_alloy",
+    "name": "Mix Andesite Alloy",
+    "required_machines": [
+      "mechanical_mixer"
+    ],
+    "input_items": {
+      "iron_nugget": 1,
+      "andesite": 1
+    },
+    "output_items": {
+      "andesite_alloy": 1
+    },
+    "duration": 5.0
+  },
+  "mix_conductive_alloy": {
+    "id": "mix_conductive_alloy",
+    "name": "Mix Conductive Alloy",
+    "required_machines": [
+      "mechanical_mixer"
+    ],
+    "input_items": {
+      "copper_sheet": 1,
+      "redstone": 1
+    },
+    "output_items": {
+      "conductive_alloy": 1
+    },
+    "duration": 5.0
+  },
+  "mix_construction_blend": {
+    "id": "mix_construction_blend",
+    "name": "Mix Construction Blend",
+    "required_machines": [
+      "mechanical_mixer"
+    ],
+    "input_items": {
+      "gravel": 1,
+      "sand": 1,
+      "clay": 1
+    },
+    "output_items": {
+      "construction_blend": 1
+    },
+    "duration": 5.0
+  },
+  "mix_industrial_compound": {
+    "id": "mix_industrial_compound",
+    "name": "Mix Industrial Compound",
+    "required_machines": [
+      "mechanical_mixer"
+    ],
+    "input_items": {
+      "crushed_andesite": 1,
+      "iron_sheet": 1
+    },
+    "output_items": {
+      "industrial_compound": 1
+    },
+    "duration": 5.0
+  },
+  "mix_machine_base": {
+    "id": "mix_machine_base",
+    "name": "Mix Machine Base",
+    "required_machines": [
+      "mechanical_mixer"
+    ],
+    "input_items": {
+      "iron_sheet": 1,
+      "andesite_alloy": 1
+    },
+    "output_items": {
+      "machine_base": 1
+    },
+    "duration": 5.0
+  },
+  "assemble_shaft": {
+    "id": "assemble_shaft",
+    "name": "Assemble Shaft",
+    "required_machines": [
+      "mechanical_assembler"
+    ],
+    "input_items": {
+      "andesite_alloy": 1
+    },
+    "output_items": {
+      "shaft": 2
+    },
+    "duration": 5.0
+  },
+  "assemble_cogwheel": {
+    "id": "assemble_cogwheel",
+    "name": "Assemble Cogwheel",
+    "required_machines": [
+      "mechanical_assembler"
+    ],
+    "input_items": {
+      "shaft": 1,
+      "plank": 1
+    },
+    "output_items": {
+      "cogwheel": 1
+    },
+    "duration": 5.0
+  },
+  "assemble_large_cogwheel": {
+    "id": "assemble_large_cogwheel",
+    "name": "Assemble Large Cogwheel",
+    "required_machines": [
+      "mechanical_assembler"
+    ],
+    "input_items": {
+      "cogwheel": 1,
+      "plank": 1
+    },
+    "output_items": {
+      "large_cogwheel": 1
+    },
+    "duration": 5.0
+  },
+  "assemble_machine_parts": {
+    "id": "assemble_machine_parts",
+    "name": "Assemble Machine Parts",
+    "required_machines": [
+      "mechanical_assembler"
+    ],
+    "input_items": {
+      "iron_sheet": 1,
+      "shaft": 1
+    },
+    "output_items": {
+      "machine_parts": 1
+    },
+    "duration": 5.0
+  },
+  "assemble_basic_mechanism": {
+    "id": "assemble_basic_mechanism",
+    "name": "Assemble Basic Mechanism",
+    "required_machines": [
+      "mechanical_assembler"
+    ],
+    "input_items": {
+      "machine_parts": 1,
+      "cogwheel": 1
+    },
+    "output_items": {
+      "basic_mechanism": 1
+    },
+    "duration": 5.0
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "iron_deposit": {
+    "id": "iron_deposit",
+    "name": "Iron Deposit",
+    "resource_type": "raw_iron",
+    "can_be_infinite": false,
+    "default_richness": 1,
+    "default_hardness": 1.0,
+    "default_required_machine_level": 1,
+    "min_stock": 100,
+    "max_stock": 5000,
+    "traits": [
+      "ore"
+    ],
+    "icon": "ore",
+    "visual_key": "iron_deposit"
+  },
+  "copper_deposit": {
+    "id": "copper_deposit",
+    "name": "Copper Deposit",
+    "resource_type": "raw_copper",
+    "can_be_infinite": false,
+    "default_richness": 1,
+    "default_hardness": 1.0,
+    "default_required_machine_level": 1,
+    "min_stock": 100,
+    "max_stock": 5000,
+    "traits": [
+      "ore"
+    ],
+    "icon": "ore",
+    "visual_key": "copper_deposit"
+  },
+  "coal_vein": {
+    "id": "coal_vein",
+    "name": "Coal Vein",
+    "resource_type": "coal",
+    "can_be_infinite": false,
+    "default_richness": 1,
+    "default_hardness": 1.0,
+    "default_required_machine_level": 1,
+    "min_stock": 100,
+    "max_stock": 5000,
+    "traits": [
+      "ore",
+      "fuel"
+    ],
+    "icon": "coal",
+    "visual_key": "coal_vein"
+  },
+  "stone_outcrop": {
+    "id": "stone_outcrop",
+    "name": "Stone Outcrop",
+    "resource_type": "stone",
+    "can_be_infinite": false,
+    "default_richness": 1,
+    "default_hardness": 1.0,
+    "default_required_machine_level": 1,
+    "min_stock": 100,
+    "max_stock": 8000,
+    "traits": [
+      "stone"
+    ],
+    "icon": "stone",
+    "visual_key": "stone_outcrop"
+  },
+  "forest": {
+    "id": "forest",
+    "name": "Forest",
+    "resource_type": "wood",
+    "can_be_infinite": true,
+    "default_richness": 1,
+    "default_hardness": 1.0,
+    "default_required_machine_level": 1,
+    "min_stock": null,
+    "max_stock": null,
+    "traits": [
+      "organic"
+    ],
+    "icon": "forest",
+    "visual_key": "forest"
+  },
+  "water_source": {
+    "id": "water_source",
+    "name": "Water Source",
+    "resource_type": "water",
+    "can_be_infinite": true,
+    "default_richness": 1,
+    "default_hardness": 1.0,
+    "default_required_machine_level": 1,
+    "min_stock": null,
+    "max_stock": null,
+    "traits": [
+      "fluid"
+    ],
+    "icon": "water",
+    "visual_key": "water_source"
+  }
+}

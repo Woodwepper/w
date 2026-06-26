@@ -370,7 +370,7 @@ def get_power_network_detail_payload(world: World, network: PowerNetwork) -> dic
     return payload
 
 
-@router.post("/worlds")
+@router.post("/create_world")
 def create_world(request: CreateWorldRequest):
     world = memory_store.create_world(request.name)
     return world.to_dict()

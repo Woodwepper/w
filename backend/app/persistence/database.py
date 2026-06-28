@@ -19,7 +19,7 @@ class Database:
             return self.connection
 
         try:
-            self.connection = sqlite3.connect(self.db_file)
+            self.connection = sqlite3.connect(self.db_file, check_same_thread=False)
             self.connection.row_factory = sqlite3.Row
             logger.info("Database connection established: %s", self.db_file)
             return self.connection

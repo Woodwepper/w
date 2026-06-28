@@ -126,3 +126,4 @@ class AddSUProducerUnitRequest(BaseModel):
 class AddSUProducerInputRequest(BaseModel):
     item_id: str
     amount: int
+

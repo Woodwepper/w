@@ -6,8 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.api.routes import router
-
+from app.api.routes.routes import router as legacy_router
+from app.api.routes.save_routes import router as save_routes
 
 app = FastAPI(title="Create API")
 
@@ -19,7 +19,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+app.include_router(legacy_router)
+app.include_router(save_routes)
 
 
 @app.get("/")

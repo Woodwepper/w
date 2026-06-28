@@ -180,3 +180,6 @@ def get_producer_machine_or_404(
     if machine is None:
         raise HTTPException(status_code=404, detail="Machine not found")
     return machine
+
+def replace_world(world: World) -> None:
+    worlds[world.id] = world

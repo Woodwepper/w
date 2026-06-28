@@ -1,24 +1,11 @@
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
 from app.engine.core.world import World
-
 from .database import Database
-
-
-@dataclass(frozen=True)
-class SaveRecord:
-    id: int
-    world_id: int
-    name: str
-    save_type: str
-    data: dict[str, Any]
-    created_at: str
-    updated_at: str
+from .save_models import GameSave
 
 
 class SaveRepository:
@@ -36,8 +23,7 @@ class SaveRepository:
                 save_type TEXT NOT NULL,
                 data TEXT NOT NULL,
                 created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                UNIQUE(world_id, save_type)
+                updated_at TEXT NOT NULL
             )
             """
         )
@@ -45,158 +31,161 @@ class SaveRepository:
     def _now(self) -> str:
         return datetime.now(timezone.utc).isoformat()
 
-    def _row_to_record(self, row: Any) -> SaveRecord:
-        return SaveRecord(
+    def _row_to_save(self, row: Any) -> GameSave:
+        return GameSave(
             id=int(row["id"]),
             world_id=int(row["world_id"]),
             name=str(row["name"]),
             save_type=str(row["save_type"]),
-            data=json.loads(row["data"]),
+            world_data_json=str(row["data"]),
             created_at=str(row["created_at"]),
             updated_at=str(row["updated_at"]),
         )
 
-    def list_saves(self) -> list[dict[str, Any]]:
+    def create_save(self, save: GameSave) -> GameSave:
+        now = self._now()
+        created_at = save.created_at or now
+        updated_at = save.updated_at or now
+
+        cursor = self.database.execute(
+            """
+            INSERT INTO world_saves (
+                world_id, name, save_type, data, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                save.world_id,
+                save.name,
+                save.save_type,
+                save.data_as_json_string(),
+                created_at,
+                updated_at,
+            ),
+        )
+        return GameSave(
+            id=int(cursor.lastrowid),
+            world_id=save.world_id,
+            name=save.name,
+            save_type=save.save_type,
+            world_data_json=save.world_data_json,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    def update_save(self, save: GameSave) -> GameSave | None:
+        if save.id is None:
+            return None
+
+        existing = self.get_save(save.id)
+        if existing is None:
+            return None
+
+        updated_at = self._now()
+        self.database.execute(
+            """
+            UPDATE world_saves
+            SET world_id = ?, name = ?, save_type = ?, data = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                save.world_id,
+                save.name,
+                save.save_type,
+                save.data_as_json_string(),
+                updated_at,
+                save.id,
+            ),
+        )
+        return GameSave(
+            id=save.id,
+            world_id=save.world_id,
+            name=save.name,
+            save_type=save.save_type,
+            world_data_json=save.world_data_json,
+            created_at=existing.created_at,
+            updated_at=updated_at,
+        )
+
+    def save(self, save: GameSave) -> GameSave:
+        if save.id is None:
+            return self.create_save(save)
+
+        updated = self.update_save(save)
+        if updated is None:
+            return self.create_save(
+                GameSave(
+                    id=None,
+                    world_id=save.world_id,
+                    name=save.name,
+                    save_type=save.save_type,
+                    world_data_json=save.world_data_json,
+                    created_at=save.created_at,
+                    updated_at=save.updated_at,
+                )
+            )
+        return updated
+
+    def list_saves(self) -> list[GameSave]:
         rows = self.database.fetch_all(
             """
-            SELECT id, world_id, name, save_type, created_at, updated_at
+            SELECT id, world_id, name, save_type, data, created_at, updated_at
             FROM world_saves
             ORDER BY updated_at DESC, id DESC
             """
         )
-        return [
-            {
-                "id": int(row["id"]),
-                "world_id": int(row["world_id"]),
-                "name": str(row["name"]),
-                "save_type": str(row["save_type"]),
-                "created_at": str(row["created_at"]),
-                "updated_at": str(row["updated_at"]),
-            }
-            for row in rows
-        ]
+        return [self._row_to_save(row) for row in rows]
 
-    def get_save(self, world_id: int, save_type: str = "manual") -> dict[str, Any] | None:
+    def get_save(self, save_id: int) -> GameSave | None:
         row = self.database.fetch_one(
             """
             SELECT id, world_id, name, save_type, data, created_at, updated_at
             FROM world_saves
-            WHERE world_id = ? AND save_type = ?
+            WHERE id = ?
             """,
-            (world_id, save_type),
+            (save_id,),
         )
         if row is None:
             return None
-        record = self._row_to_record(row)
-        return {
-            "id": record.id,
-            "world_id": record.world_id,
-            "name": record.name,
-            "save_type": record.save_type,
-            "data": record.data,
-            "created_at": record.created_at,
-            "updated_at": record.updated_at,
-        }
+        return self._row_to_save(row)
 
-    def load_save(self, world_id: int, save_type: str = "manual") -> World | None:
-        save = self.get_save(world_id, save_type)
-        if save is None:
-            return None
-        return World.from_dict(save["data"])
-
-    def save_world(
-        self,
-        world: World,
-        name: str | None = None,
-        save_type: str = "manual",
-    ) -> dict[str, Any]:
-        payload = json.dumps(world.to_dict(), ensure_ascii=False)
-        now = self._now()
-        save_name = name or world.name
-
-        existing = self.get_save(world.id, save_type)
-        if existing is None:
-            cursor = self.database.execute(
-                """
-                INSERT INTO world_saves (
-                    world_id, name, save_type, data, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (world.id, save_name, save_type, payload, now, now),
-            )
-            save_id = int(cursor.lastrowid)
-            return {
-                "id": save_id,
-                "world_id": world.id,
-                "name": save_name,
-                "save_type": save_type,
-                "data": world.to_dict(),
-                "created_at": now,
-                "updated_at": now,
-            }
-
-        self.database.execute(
+    def list_saves_by_world_id(self, world_id: int) -> list[GameSave]:
+        rows = self.database.fetch_all(
             """
-            UPDATE world_saves
-            SET name = ?, data = ?, updated_at = ?
-            WHERE world_id = ? AND save_type = ?
+            SELECT id, world_id, name, save_type, data, created_at, updated_at
+            FROM world_saves
+            WHERE world_id = ?
+            ORDER BY updated_at DESC, id DESC
             """,
-            (save_name, payload, now, world.id, save_type),
+            (world_id,),
         )
-        return {
-            "id": existing["id"],
-            "world_id": world.id,
-            "name": save_name,
-            "save_type": save_type,
-            "data": world.to_dict(),
-            "created_at": existing["created_at"],
-            "updated_at": now,
-        }
+        return [self._row_to_save(row) for row in rows]
 
-    def rename_save(
-        self,
-        world_id: int,
-        new_name: str,
-        save_type: str = "manual",
-    ) -> bool:
+    def rename_save(self, save_id: int, new_name: str) -> bool:
         cursor = self.database.execute(
             """
             UPDATE world_saves
             SET name = ?, updated_at = ?
-            WHERE world_id = ? AND save_type = ?
+            WHERE id = ?
             """,
-            (new_name, self._now(), world_id, save_type),
+            (new_name, self._now(), save_id),
         )
         return cursor.rowcount > 0
 
-    def delete_save(self, world_id: int, save_type: str = "manual") -> bool:
+    def delete_save(self, save_id: int) -> bool:
         cursor = self.database.execute(
             """
             DELETE FROM world_saves
-            WHERE world_id = ? AND save_type = ?
+            WHERE id = ?
             """,
-            (world_id, save_type),
+            (save_id,),
         )
         return cursor.rowcount > 0
 
-    def autosave(self, world: World) -> dict[str, Any]:
-        return self.save_world(world, name=f"{world.name} Autosave", save_type="autosave")
+    def load_world(self, save_id: int) -> World | None:
+        save = self.get_save(save_id)
 
-    def quicksave(self, world: World) -> dict[str, Any]:
-        return self.save_world(world, name=f"{world.name} Quicksave", save_type="quicksave")
+        if save is None:
+            return None
 
-    def list_world_ids(self) -> list[int]:
-        rows = self.database.fetch_all(
-            """
-            SELECT DISTINCT world_id
-            FROM world_saves
-            ORDER BY world_id ASC
-            """
-        )
-        return [int(row["world_id"]) for row in rows]
-
-    def save_exists(self, world_id: int, save_type: str = "manual") -> bool:
-        return self.get_save(world_id, save_type) is not None
-
-    def load_or_create_world_save(self, world: World, save_type: str = "manual") -> dict[str, Any]:
-        return self.save_world(world, save_type=save_type)
+        return World.from_dict(save.data_as_dict())
+    
